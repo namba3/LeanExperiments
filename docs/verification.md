@@ -34,7 +34,7 @@
 
 各詳細ページでは、一般証明、有限確認、未対象の実行境界を分けて記録します。
 
-HeapSort の証明は依存順に `HeapSort/Core.lean` と `HeapSort/FiniteChecks.lean` に分けています。既存の import path `LeanExperiments.Verification.HeapSort.Spec` は、両モジュールを読み込む互換入口として維持しています。
+HeapSort の証明は `HeapSort/HeapOperations.lean` に共通仕様・ヒープモデル・基本操作契約を、`HeapSort/Core.lean` にヒープ構築・抽出と一般正当性を、`HeapSort/FiniteChecks.lean` に有限確認を置いています。既存の import path `LeanExperiments.Verification.HeapSort.Spec` は、3モジュールを読み込む互換入口として維持しています。RunningMedian の状態不変条件の定義と基礎補題は `RunningMedian/StateInvariant.lean` に分け、`RunningMedian/Spec.lean` を互換入口として維持しています。
 
 ## 保証範囲と信頼依存
 
@@ -54,4 +54,10 @@ GitHub Actions の実行サマリーには、一般証明・有限確認ごと�
 
 ## 継続的ビルド
 
-GitHub Actions は `lake build` と CLI の入出力スモーク確認に加え、監査スクリプトの回帰テストを実行します。Lean ソース全体から `sorry`・`admit`・独自 `axiom`／`constant` 宣言を検出し、Verification 配下の公開一般定理、private 補助定理、有限回帰検査・具体例のカーネル依存を個別に監査します。private 名がimport後に隠れるmodule-system形式では、元ソースを監査時に再コンパイルして依存を取得します。通常の一般定理とprivate定理の依存は `propext`・`Classical.choice`・`Quot.sound` に限定します。一般的な帰納証明の基底値や有限剰余表の証明に `native_decide` を使う定理は、通常の一般定理とは別グループに明示して監査し、生成された補助公理の対象を有限検査グループと合わせて登録済み定理に限定します。Verification 配下の全 Lean ファイルを一般定理・有限検査の各ソース一覧と照合し、定理やファイルの追加・削除による監査漏れと古い登録を検出します。さらに Lean Environment から検証名前空間内の公開 Proposition 定数を列挙して public manifest と照合し、ソーススキャナーが列挙しない命題型定義や生成補助宣言の登録漏れも検出します。private theorem / lemma は元ソースの再コンパイル監査で補い、private proposition-valued `def` / `opaque` は生成補助宣言も含む inventory を reviewed baseline と照合します。新しい宣言が加わると CI が止まり、推移的な公理監査を登録してから baseline を更新する必要があります。全監査で `sorryAx` と未登録の定理依存を拒否し、実際の依存から一般証明・有限検査とネイティブ計算依存の件数をActionsサマリーへ出力します。ビルド成功は Lean が受理した定義・証明の確認です。有限計算確認と、形式検証の対象外である CLI の標準入出力実行は別の証拠です。
+GitHub Actions は `lake build` と CLI の入出力確認に加え、監査ツールのネガティブテストを実行します。`verification_sources.json` は Verification 配下の全ファイルと名前空間を登録し、CI はファイル一覧、`LeanExperiments.Verification` からの import 到達性、ビルド済み `.olean` を照合します。ソース上の theorem / lemma は axiom manifest の明示的な一般・有限グループと照合し、定理名の規則から範囲を推測しません。Lean ソース全体から `sorry`・`admit`・独自 `axiom`／`constant` 宣言を検出し、公開命題、private 補助定理、有限回帰検査・具体例のカーネル依存を個別に監査します。private 名が import 後に隠れる module-system 形式では、元ソースを監査時に再コンパイルして依存を取得します。通常の一般定理と private 定理の依存は `propext`・`Classical.choice`・`Quot.sound` に限定します。一般的な帰納証明の基底値や有限剰余表の証明に `native_decide` を使う定理は別グループに登録し、生成補助公理を登録済み対象に制限します。Lean Environment から検証名前空間の公開 proposition 宣言を列挙し、public manifest と比較します。private proposition-valued `def` / `opaque` は生成補助宣言も含めて reviewed baseline と照合します。
+
+Lean Environment から公開宣言1,740件（うち proposition 宣言1,497件）の名前、種類、所属モジュール、表示された型、公理依存を `verification_api_baseline.json` と照合します。削除、新規追加、型・種類・依存の差分は CI で要レビューとして検出します。型は Lean pretty printer の文字列表現で比較するため、差分は意味的非同値性を証明するものではなく、意味的同値性も自動証明しません。baseline 更新はレビュー後に明示して行います。API snapshot と公理監査は異なる観点を記録し、いずれも単独で証明の適切さを保証するものではありません。ビルド成功は Lean が受理した定義・証明の確認です。有限計算確認と、形式検証の対象外である CLI の標準入出力実行は別の証拠です。
+
+## 性能測定
+
+`python3 scripts/benchmark_algorithms.py --sizes 100 1000 5000 --repeats 3 --output benchmark.json` は、heap / merge / quick sort の再帰版・ループ版と RunningMedian のCLIを、乱数・昇順・降順・重複値の多い入力で測定します。Lean CLI の入出力時間と、GNU `time` が報告する子プロセスの最大RSSをJSONに記録し、出力が参照結果と一致することも確認します。測定値にはCLIの解析・表示コストを含み、計算量の証明ではありません。サイズや実行環境を変えた結果を比較するときは、Lean toolchain、OS、seed、反復回数を合わせてください。

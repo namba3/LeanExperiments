@@ -53,6 +53,15 @@ def main() -> int:
     expect_output("median", "9 1 4 2 7 3\n", "3.5\n")
     expect_output("median", "9 1 4 2 7\n", "4\n")
     expect_output("median", "", "none\n")
+    # Exercise large decimal tokens and a long list through the real parser and CLI.
+    large_natural = "9" * 256
+    expect_output("median", f"{large_natural} {large_natural}\n", f"{large_natural}\n")
+    long_values = list(range(4095, -1, -1))
+    expect_output(
+        "heapsort",
+        " ".join(map(str, long_values)),
+        " ".join(map(str, reversed(long_values))) + "\n",
+    )
     expect_output("factorial", "10\n", "3628800\n")
     expect_output("factorial", "0\n", "1\n")
     expect_output("prime-factors", "360\n", "2 2 2 3 3 5\n")

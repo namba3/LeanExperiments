@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "path": "LeanExperiments/Verification/CLI/HeapSort.lean",
+      "namespace": "LeanExperiments.Verification.CLI.HeapSort"
+    },
+    {
+      "path": "LeanExperiments/Verification/CLI/Sorting.lean",
+      "namespace": "LeanExperiments.Verification.CLI.Sorting"
+    },
+    {
+      "path": "LeanExperiments/Verification/CLI/Spec.lean",
+      "namespace": "LeanExperiments.Verification.CLI"
+    },
+    {
+      "path": "LeanExperiments/Verification/Factorial/Spec.lean",
+      "namespace": "LeanExperiments.Verification.Factorial"
+    },
+    {
+      "path": "LeanExperiments/Verification/Fibonacci/Spec.lean",
+      "namespace": "LeanExperiments.Verification.Fibonacci"
+    },
+    {
+      "path": "LeanExperiments/Verification/HeapSort/Core.lean",
+      "namespace": "LeanExperiments.Verification.HeapSort.Spec"
+    },
+    {
+      "path": "LeanExperiments/Verification/HeapSort/FiniteChecks.lean",
+      "namespace": "LeanExperiments.Verification.HeapSort.Spec"
+    },
+    {
+      "path": "LeanExperiments/Verification/HeapSort/HeapOperations.lean",
+      "namespace": "LeanExperiments.Verification.HeapSort.Spec"
+    },
+    {
+      "path": "LeanExperiments/Verification/HeapSort/Spec.lean",
+      "namespace": "LeanExperiments.Verification.HeapSort.Spec"
+    },
+    {
+      "path": "LeanExperiments/Verification/MergeSort/Spec.lean",
+      "namespace": "LeanExperiments.Verification.MergeSort"
+    },
+    {
+      "path": "LeanExperiments/Verification/PrimeFactors/Spec.lean",
+      "namespace": "LeanExperiments.Verification.PrimeFactors"
+    },
+    {
+      "path": "LeanExperiments/Verification/QuickSort/Spec.lean",
+      "namespace": "LeanExperiments.Verification.QuickSort"
+    },
+    {
+      "path": "LeanExperiments/Verification/RunningMedian/HeapInvariant.lean",
+      "namespace": "LeanExperiments.Verification.RunningMedian"
+    },
+    {
+      "path": "LeanExperiments/Verification/RunningMedian/HeapOperations.lean",
+      "namespace": "LeanExperiments.Verification.RunningMedian"
+    },
+    {
+      "path": "LeanExperiments/Verification/RunningMedian/MedianSpec.lean",
+      "namespace": "LeanExperiments.Verification.RunningMedian"
+    },
+    {
+      "path": "LeanExperiments/Verification/RunningMedian/Operations.lean",
+      "namespace": "LeanExperiments.Verification.RunningMedian"
+    },
+    {
+      "path": "LeanExperiments/Verification/RunningMedian/Spec.lean",
+      "namespace": "LeanExperiments.Verification.RunningMedian"
+    },
+    {
+      "path": "LeanExperiments/Verification/RunningMedian/StateInvariant.lean",
+      "namespace": "LeanExperiments.Verification.RunningMedian"
+    },
+    {
+      "path": "LeanExperiments/Verification/Sorting/Comparisons.lean",
+      "namespace": "LeanExperiments.Verification.Sorting.Comparisons"
+    },
+    {
+      "path": "LeanExperiments/Verification/Sorting/Spec.lean",
+      "namespace": "LeanExperiments.Verification.Sorting.Spec"
+    }
+  ]
+}

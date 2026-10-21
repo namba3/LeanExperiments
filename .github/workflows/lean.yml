@@ -18,6 +18,11 @@ jobs:
         with:
           build: true
           test: false
+      - name: Check verification source coverage and import reachability
+        run: >-
+          python3 scripts/check_verification_coverage.py
+          --sources scripts/verification_sources.json
+          --axioms scripts/verification_axiom_manifest.json
       - name: Run CLI smoke checks
         run: python3 scripts/test_cli.py
       - name: Test verification audit tooling
@@ -26,6 +31,12 @@ jobs:
         run: python3 scripts/check_lean_sources.py
       - name: Inventory proposition declarations from Lean Environment
         run: lake env lean scripts/verification_environment_inventory.lean > .lake/verification-environment.txt 2>&1
+      - name: Snapshot public verification API from Lean Environment
+        run: |
+          lake env lean scripts/verification_api_inventory.lean > .lake/verification-api.txt 2>&1
+          python3 scripts/check_verification_api.py \
+            --baseline scripts/verification_api_baseline.json \
+            .lake/verification-api.txt
       - name: Check private proposition-definition inventory
         run: |
           lake env lean scripts/verification_private_prop_def_inventory.lean > .lake/verification-private-prop-defs.txt 2>&1
@@ -67,44 +78,6 @@ jobs:
             --native-decide-group module_private \
             --native-decide-group legacy_private \
             --environment-inventory .lake/verification-environment.txt \
-            --finite-root LeanExperiments/Verification \
-            --general-root LeanExperiments/Verification \
-            --finite-source module_finite LeanExperiments/Verification/Factorial/Spec.lean LeanExperiments.Verification.Factorial \
-            --finite-source module_finite LeanExperiments/Verification/Fibonacci/Spec.lean LeanExperiments.Verification.Fibonacci \
-            --finite-source module_finite LeanExperiments/Verification/PrimeFactors/Spec.lean LeanExperiments.Verification.PrimeFactors \
-            --finite-source legacy_finite LeanExperiments/Verification/Sorting/Spec.lean LeanExperiments.Verification.Sorting.Spec \
-            --finite-source legacy_finite LeanExperiments/Verification/Sorting/Comparisons.lean LeanExperiments.Verification.Sorting.Comparisons \
-            --finite-source legacy_finite LeanExperiments/Verification/MergeSort/Spec.lean LeanExperiments.Verification.MergeSort \
-            --finite-source legacy_finite LeanExperiments/Verification/QuickSort/Spec.lean LeanExperiments.Verification.QuickSort \
-            --finite-source legacy_finite LeanExperiments/Verification/HeapSort/Core.lean LeanExperiments.Verification.HeapSort.Spec \
-            --finite-source legacy_finite LeanExperiments/Verification/HeapSort/FiniteChecks.lean LeanExperiments.Verification.HeapSort.Spec \
-            --finite-source legacy_finite LeanExperiments/Verification/HeapSort/Spec.lean LeanExperiments.Verification.HeapSort.Spec \
-            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/Operations.lean LeanExperiments.Verification.RunningMedian \
-            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/MedianSpec.lean LeanExperiments.Verification.RunningMedian \
-            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/HeapInvariant.lean LeanExperiments.Verification.RunningMedian \
-            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/HeapOperations.lean LeanExperiments.Verification.RunningMedian \
-            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
-            --finite-source legacy_finite LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
-            --finite-source legacy_finite LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \
-            --finite-source legacy_finite LeanExperiments/Verification/CLI/Sorting.lean LeanExperiments.Verification.CLI.Sorting \
-            --general-source module LeanExperiments/Verification/Factorial/Spec.lean LeanExperiments.Verification.Factorial \
-            --general-source module LeanExperiments/Verification/Fibonacci/Spec.lean LeanExperiments.Verification.Fibonacci \
-            --general-source module LeanExperiments/Verification/PrimeFactors/Spec.lean LeanExperiments.Verification.PrimeFactors \
-            --general-source legacy LeanExperiments/Verification/Sorting/Spec.lean LeanExperiments.Verification.Sorting.Spec \
-            --general-source legacy LeanExperiments/Verification/Sorting/Comparisons.lean LeanExperiments.Verification.Sorting.Comparisons \
-            --general-source legacy LeanExperiments/Verification/MergeSort/Spec.lean LeanExperiments.Verification.MergeSort \
-            --general-source legacy LeanExperiments/Verification/QuickSort/Spec.lean LeanExperiments.Verification.QuickSort \
-            --general-source legacy LeanExperiments/Verification/HeapSort/Core.lean LeanExperiments.Verification.HeapSort.Spec \
-            --general-source legacy LeanExperiments/Verification/HeapSort/FiniteChecks.lean LeanExperiments.Verification.HeapSort.Spec \
-            --general-source legacy LeanExperiments/Verification/HeapSort/Spec.lean LeanExperiments.Verification.HeapSort.Spec \
-            --general-source legacy LeanExperiments/Verification/RunningMedian/Operations.lean LeanExperiments.Verification.RunningMedian \
-            --general-source legacy LeanExperiments/Verification/RunningMedian/MedianSpec.lean LeanExperiments.Verification.RunningMedian \
-            --general-source legacy LeanExperiments/Verification/RunningMedian/HeapInvariant.lean LeanExperiments.Verification.RunningMedian \
-            --general-source legacy LeanExperiments/Verification/RunningMedian/HeapOperations.lean LeanExperiments.Verification.RunningMedian \
-            --general-source legacy LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
-            --general-source legacy LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
-            --general-source legacy LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \
-            --general-source legacy LeanExperiments/Verification/CLI/Sorting.lean LeanExperiments.Verification.CLI.Sorting \
             --github-summary "$GITHUB_STEP_SUMMARY"
           cat .lake/verification-axioms-module.txt .lake/verification-axioms-module-native.txt \
             .lake/verification-axioms-legacy.txt \

@@ -9,7 +9,6 @@ import re
 import sys
 from pathlib import Path
 
-from verification_source_declarations import declared_namespaces, theorem_declarations
 
 
 ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -19,22 +18,6 @@ RECORD_START = re.compile(
 ENVIRONMENT_PROP_RECORD = re.compile(
     r"VERIFICATION_ENV_PROP\|(?:theorem|axiom|def|opaque|inductive|constructor|recursor|quot)\|([^\s|]+)$"
 )
-
-
-def finite_audit_name(name: str) -> bool:
-    """Names that explicitly identify finite checks, examples, or boundaries."""
-    normalized = name.lower()
-    return (
-        name.endswith("Check_passes")
-        or "_example" in name
-        or "boundedinput" in normalized
-        or "_bounded_agrees_with" in normalized
-        or "boundaryinput" in normalized
-        or "widevalueinput" in normalized
-        or re.search(r"_for_[a-z0-9]*input$", normalized) is not None
-        or name.endswith("_boundary")
-        or "_boundary_" in normalized
-    ) and name != "mergeLoopStep_preserves_boundary"
 
 
 def is_registered_native_decide_axiom(axiom: str, finite_targets: set[str]) -> bool:
@@ -142,36 +125,6 @@ def main(arguments: list[str]) -> int:
         help="allow native_decide helpers from registered targets in this finite-check group",
     )
     parser.add_argument(
-        "--finite-source",
-        action="append",
-        nargs=3,
-        metavar=("GROUP", "SOURCE", "NAMESPACE"),
-        default=[],
-        help="require finite targets in SOURCE/NAMESPACE to be registered in GROUP",
-    )
-    parser.add_argument(
-        "--general-source",
-        action="append",
-        nargs=3,
-        metavar=("GROUP", "SOURCE", "NAMESPACE"),
-        default=[],
-        help="require general theorems in SOURCE/NAMESPACE to be registered in GROUP",
-    )
-    parser.add_argument(
-        "--finite-root",
-        action="append",
-        default=[],
-        metavar="DIRECTORY",
-        help="require every Lean file under DIRECTORY to have a --finite-source entry",
-    )
-    parser.add_argument(
-        "--general-root",
-        action="append",
-        default=[],
-        metavar="DIRECTORY",
-        help="require every Lean file under DIRECTORY to have a --general-source entry",
-    )
-    parser.add_argument(
         "--github-summary",
         metavar="PATH",
         help="append a proof-scope and native-dependency summary for GitHub Actions",
@@ -250,143 +203,6 @@ def main(arguments: list[str]) -> int:
     native_decide_targets = set().union(
         *(set(manifest[group]) for group in native_decide_groups)
     ) if native_decide_groups else set()
-
-    finite_sources: dict[str, set[str]] = {}
-    finite_source_paths: set[Path] = set()
-    for group, filename, namespace in options.finite_source:
-        if group not in native_decide_groups:
-            parser.error(f"finite source group lacks native_decide policy: {group}")
-        if group not in manifest:
-            parser.error(f"unknown finite source group: {group}")
-        path = Path(filename)
-        finite_source_paths.add(path.resolve())
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError as error:
-            parser.error(f"cannot read finite source {path}: {error}")
-        if namespace not in declared_namespaces(lines):
-            parser.error(f"{path}: expected namespace {namespace!r}")
-        try:
-            discovered = {
-                f"{declared_namespace}.{name}"
-                for declared_namespace, name, is_private in theorem_declarations(lines)
-                if not is_private and finite_audit_name(name)
-            }
-        except ValueError as error:
-            parser.error(f"{path}: cannot safely scan theorem declarations: {error}")
-        finite_sources.setdefault(group, set()).update(discovered)
-
-    for directory in options.finite_root:
-        root = Path(directory)
-        try:
-            source_files = {path.resolve() for path in root.rglob("*.lean")}
-        except OSError as error:
-            parser.error(f"cannot scan finite source root {root}: {error}")
-        unregistered_sources = source_files - finite_source_paths
-        if unregistered_sources:
-            parser.error(
-                f"Lean sources under {root} lack --finite-source entries: "
-                + ", ".join(str(path) for path in sorted(unregistered_sources))
-            )
-
-    for group, discovered in finite_sources.items():
-        registered = set(manifest[group])
-        missing = discovered - registered
-        stale = registered - discovered
-        if missing:
-            parser.error(
-                f"finite targets missing from {group}: " + ", ".join(sorted(missing))
-            )
-        if stale:
-            parser.error(
-                f"finite manifest entries not found in sources for {group}: "
-                + ", ".join(sorted(stale))
-            )
-
-    general_sources: dict[str, set[str]] = {}
-    private_sources: dict[str, set[str]] = {}
-    general_source_paths: set[Path] = set()
-    for group, filename, namespace in options.general_source:
-        if group not in manifest:
-            parser.error(f"unknown general source group: {group}")
-        path = Path(filename)
-        general_source_paths.add(path.resolve())
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError as error:
-            parser.error(f"cannot read general source {path}: {error}")
-        if namespace not in declared_namespaces(lines):
-            parser.error(f"{path}: expected namespace {namespace!r}")
-        try:
-            declarations = list(theorem_declarations(lines))
-        except ValueError as error:
-            parser.error(f"{path}: cannot safely scan theorem declarations: {error}")
-        discovered = {
-            f"{declared_namespace}.{name}"
-            for declared_namespace, name, is_private in declarations
-            if not is_private and not finite_audit_name(name)
-        }
-        general_sources.setdefault(group, set()).update(discovered)
-        private_discovered = {
-            f"{declared_namespace}.{name}"
-            for declared_namespace, name, is_private in declarations
-            if is_private
-        }
-        private_group = f"{group}_private"
-        if private_discovered and private_group not in manifest:
-            parser.error(f"private theorem source has no audit group: {private_group}")
-        if private_group in manifest:
-            private_sources.setdefault(private_group, set()).update(private_discovered)
-
-    for directory in options.general_root:
-        root = Path(directory)
-        try:
-            source_files = {path.resolve() for path in root.rglob("*.lean")}
-        except OSError as error:
-            parser.error(f"cannot scan general source root {root}: {error}")
-        unregistered_sources = source_files - general_source_paths
-        if unregistered_sources:
-            parser.error(
-                f"Lean sources under {root} lack --general-source entries: "
-                + ", ".join(str(path) for path in sorted(unregistered_sources))
-            )
-        stale_sources = general_source_paths - source_files
-        if stale_sources:
-            parser.error(
-                f"--general-source entries are outside {root} or no longer exist: "
-                + ", ".join(str(path) for path in sorted(stale_sources))
-            )
-
-    for group, discovered in general_sources.items():
-        registered = set(manifest[group])
-        native_group = f"{group}_native"
-        if native_group in manifest:
-            registered.update(manifest[native_group])
-        missing = discovered - registered
-        stale = registered - discovered
-        if missing:
-            parser.error(
-                f"general targets missing from {group}: " + ", ".join(sorted(missing))
-            )
-        if stale:
-            parser.error(
-                f"general manifest entries not found in sources for {group}: "
-                + ", ".join(sorted(stale))
-            )
-
-    for group, discovered in private_sources.items():
-        registered = set(manifest[group])
-        missing = discovered - registered
-        stale = registered - discovered
-        if missing:
-            parser.error(
-                f"private theorems missing from {group}: " + ", ".join(sorted(missing))
-            )
-        if stale:
-            parser.error(
-                f"private manifest entries not found in sources for {group}: "
-                + ", ".join(sorted(stale))
-            )
 
     failed = False
     total = 0
