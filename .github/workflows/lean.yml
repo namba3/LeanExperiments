@@ -82,6 +82,7 @@ jobs:
             --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/Operations.lean LeanExperiments.Verification.RunningMedian \
             --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/MedianSpec.lean LeanExperiments.Verification.RunningMedian \
             --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/HeapInvariant.lean LeanExperiments.Verification.RunningMedian \
+            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/HeapOperations.lean LeanExperiments.Verification.RunningMedian \
             --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
             --finite-source legacy_finite LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
             --finite-source legacy_finite LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \
@@ -99,6 +100,7 @@ jobs:
             --general-source legacy LeanExperiments/Verification/RunningMedian/Operations.lean LeanExperiments.Verification.RunningMedian \
             --general-source legacy LeanExperiments/Verification/RunningMedian/MedianSpec.lean LeanExperiments.Verification.RunningMedian \
             --general-source legacy LeanExperiments/Verification/RunningMedian/HeapInvariant.lean LeanExperiments.Verification.RunningMedian \
+            --general-source legacy LeanExperiments/Verification/RunningMedian/HeapOperations.lean LeanExperiments.Verification.RunningMedian \
             --general-source legacy LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
             --general-source legacy LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
             --general-source legacy LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \

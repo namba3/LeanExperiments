@@ -30,7 +30,7 @@
 
 対象: `LeanExperiments/Verification/RunningMedian/Spec.lean`
 
-操作ごとの一般契約は `Operations.lean`、ヒープ順序の共通仕様と上昇調整の不変条件は `HeapInvariant.lean`、実装状態から独立したソート基準の中央値仕様は `MedianSpec.lean` に分離しています。既存の `Spec.lean` はこれらを読み込み、状態更新・中央値の正当性証明・有限確認をまとめる互換入口です。
+操作ごとの一般契約は `Operations.lean`、ヒープ順序の共通仕様と上昇調整の不変条件は `HeapInvariant.lean`、最大・最小ヒープの操作と再平衡契約は `HeapOperations.lean`、実装状態から独立したソート基準の中央値仕様は `MedianSpec.lean` に分離しています。既存の `Spec.lean` はこれらを読み込み、状態不変条件・中央値の正当性証明・有限確認をまとめる互換入口です。
 
 ### 一般証明
 
