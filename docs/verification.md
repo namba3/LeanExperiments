@@ -34,6 +34,8 @@
 
 各詳細ページでは、一般証明、有限確認、未対象の実行境界を分けて記録します。
 
+HeapSort の証明は依存順に `HeapSort/Core.lean` と `HeapSort/FiniteChecks.lean` に分けています。既存の import path `LeanExperiments.Verification.HeapSort.Spec` は、両モジュールを読み込む互換入口として維持しています。
+
 ## 保証範囲と信頼依存
 
 検証結果は「入力範囲」と「証明の信頼依存」を別々に読みます。

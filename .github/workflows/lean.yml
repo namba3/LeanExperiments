@@ -76,6 +76,8 @@ jobs:
             --finite-source legacy_finite LeanExperiments/Verification/Sorting/Comparisons.lean LeanExperiments.Verification.Sorting.Comparisons \
             --finite-source legacy_finite LeanExperiments/Verification/MergeSort/Spec.lean LeanExperiments.Verification.MergeSort \
             --finite-source legacy_finite LeanExperiments/Verification/QuickSort/Spec.lean LeanExperiments.Verification.QuickSort \
+            --finite-source legacy_finite LeanExperiments/Verification/HeapSort/Core.lean LeanExperiments.Verification.HeapSort.Spec \
+            --finite-source legacy_finite LeanExperiments/Verification/HeapSort/FiniteChecks.lean LeanExperiments.Verification.HeapSort.Spec \
             --finite-source legacy_finite LeanExperiments/Verification/HeapSort/Spec.lean LeanExperiments.Verification.HeapSort.Spec \
             --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
             --finite-source legacy_finite LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
@@ -88,6 +90,8 @@ jobs:
             --general-source legacy LeanExperiments/Verification/Sorting/Comparisons.lean LeanExperiments.Verification.Sorting.Comparisons \
             --general-source legacy LeanExperiments/Verification/MergeSort/Spec.lean LeanExperiments.Verification.MergeSort \
             --general-source legacy LeanExperiments/Verification/QuickSort/Spec.lean LeanExperiments.Verification.QuickSort \
+            --general-source legacy LeanExperiments/Verification/HeapSort/Core.lean LeanExperiments.Verification.HeapSort.Spec \
+            --general-source legacy LeanExperiments/Verification/HeapSort/FiniteChecks.lean LeanExperiments.Verification.HeapSort.Spec \
             --general-source legacy LeanExperiments/Verification/HeapSort/Spec.lean LeanExperiments.Verification.HeapSort.Spec \
             --general-source legacy LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
             --general-source legacy LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \

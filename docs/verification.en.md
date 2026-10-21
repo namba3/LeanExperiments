@@ -34,6 +34,8 @@ This catalog separates general theorems for arbitrary inputs from finite computa
 
 Each detail page separates general theorems, finite checks, and execution boundaries outside the formal proofs.
 
+HeapSort verification is split by dependency direction between `HeapSort/Core.lean` and `HeapSort/FiniteChecks.lean`. The existing import path `LeanExperiments.Verification.HeapSort.Spec` remains as a compatibility entry point that imports both modules.
+
 ## Proof scope and trust dependencies
 
 Read verification results along two independent dimensions: the input domain and the proof's trust dependencies.
