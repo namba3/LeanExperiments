@@ -30,7 +30,7 @@ The general parser theorems establish value and error semantics for every finite
 
 Source: `LeanExperiments/Verification/RunningMedian/Spec.lean`
 
-General heap-operation contracts are in `Operations.lean`; the sorted-input median specification, independent of the implementation state, is in `MedianSpec.lean`. The existing `Spec.lean` imports both and remains the compatibility entry point for state invariants, correctness proofs, and finite checks.
+General heap-operation contracts are in `Operations.lean`; the shared heap-order specification and sift-up invariants are in `HeapInvariant.lean`; and the sorted-input median specification, independent of the implementation state, is in `MedianSpec.lean`. The existing `Spec.lean` imports these modules and remains the compatibility entry point for state updates, median correctness proofs, and finite checks.
 
 ### General theorems
 
