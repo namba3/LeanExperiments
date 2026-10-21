@@ -24,6 +24,8 @@ jobs:
         run: python3 -m unittest discover -s scripts/tests -v
       - name: Reject proof holes and ad hoc axioms
         run: python3 scripts/check_lean_sources.py
+      - name: Inventory proposition declarations from Lean Environment
+        run: lake env lean scripts/verification_environment_inventory.lean > .lake/verification-environment.txt 2>&1
       - name: Audit kernel dependencies of public, private, and finite theorems
         run: |
           lake env lean scripts/verification_axiom_audit.lean > .lake/verification-axioms-module.txt 2>&1
@@ -32,6 +34,7 @@ jobs:
           lake env lean scripts/verification_axiom_audit_module_finite.lean > .lake/verification-axioms-module-finite.txt 2>&1
           lake env lean scripts/verification_axiom_audit_legacy_finite.lean > .lake/verification-axioms-legacy-finite.txt 2>&1
           lake env lean scripts/verification_axiom_audit_private_legacy.lean > .lake/verification-axioms-private-legacy.txt 2>&1
+          lake env lean scripts/verification_axiom_audit_generated.lean > .lake/verification-axioms-generated.txt 2>&1
           python3 scripts/audit_private_module_axioms.py > .lake/verification-axioms-private-module.txt 2>&1
           python3 scripts/check_lean_sources.py --reject-sorry-ax \
             .lake/verification-axioms-module.txt \
@@ -40,7 +43,8 @@ jobs:
             .lake/verification-axioms-module-finite.txt \
             .lake/verification-axioms-legacy-finite.txt \
             .lake/verification-axioms-private-module.txt \
-            .lake/verification-axioms-private-legacy.txt
+            .lake/verification-axioms-private-legacy.txt \
+            .lake/verification-axioms-generated.txt
           python3 scripts/check_verification_axioms.py \
             --manifest scripts/verification_axiom_manifest.json \
             --audit module .lake/verification-axioms-module.txt \
@@ -50,11 +54,13 @@ jobs:
             --audit legacy_finite .lake/verification-axioms-legacy-finite.txt \
             --audit module_private .lake/verification-axioms-private-module.txt \
             --audit legacy_private .lake/verification-axioms-private-legacy.txt \
+            --audit environment_generated .lake/verification-axioms-generated.txt \
             --native-decide-group module_finite \
             --native-decide-group module_native \
             --native-decide-group legacy_finite \
             --native-decide-group module_private \
             --native-decide-group legacy_private \
+            --environment-inventory .lake/verification-environment.txt \
             --finite-root LeanExperiments/Verification \
             --general-root LeanExperiments/Verification \
             --finite-source module_finite LeanExperiments/Verification/Factorial/Spec.lean LeanExperiments.Verification.Factorial \

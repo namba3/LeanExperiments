@@ -136,28 +136,12 @@ def _current_namespace(scopes: list[tuple[str, str]]) -> str:
     return ".".join(name for kind, name in scopes if kind == "namespace")
 
 
-def declared_namespaces(lines: list[str]) -> set[str]:
-    """Return namespace commands outside comments and string literals."""
-    source = strip_comments_and_strings("\n".join(lines))
-    return {
-        match.group(1)
-        for line in source.splitlines()
-        if (match := NAMESPACE_DECLARATION.match(line.strip()))
-    }
-
-
-def theorem_declarations(lines: list[str]) -> Iterator[tuple[str, str, bool]]:
-    """Yield ``(namespace, name, is_private)`` for named theorem/lemma headers.
-
-    Comments and strings cannot create phantom declarations. Namespace and
-    section scopes are tracked independently, including qualified ``end``
-    labels. Attributes and declaration modifiers may continue on later lines.
-    """
+def _scoped_lines(
+    lines: list[str],
+) -> Iterator[tuple[int, str, list[tuple[str, str]], str]]:
+    """Yield source lines with the scope stack after namespace/section commands."""
     source = strip_comments_and_strings("\n".join(lines))
     scopes: list[tuple[str, str]] = []
-    pending_attribute_depth = 0
-    pending_modifiers: list[str] = []
-
     for line_number, line in enumerate(source.splitlines(), start=1):
         stripped = line.strip()
         if not stripped:
@@ -166,15 +150,13 @@ def theorem_declarations(lines: list[str]) -> Iterator[tuple[str, str, bool]]:
         namespace = NAMESPACE_DECLARATION.match(stripped)
         if namespace:
             scopes.append(("namespace", namespace.group(1)))
-            pending_attribute_depth = 0
-            pending_modifiers.clear()
+            yield line_number, stripped, scopes.copy(), "namespace"
             continue
 
         section = SECTION_DECLARATION.match(stripped)
         if section:
             scopes.append(("section", section.group(1) or ""))
-            pending_attribute_depth = 0
-            pending_modifiers.clear()
+            yield line_number, stripped, scopes.copy(), "section"
             continue
 
         end = END_DECLARATION.match(stripped)
@@ -198,6 +180,38 @@ def theorem_declarations(lines: list[str]) -> Iterator[tuple[str, str, bool]]:
                         f"line {line_number}: `end {label}` does not match an open scope"
                     )
                 del scopes[matching:]
+            yield line_number, stripped, scopes.copy(), "end"
+            continue
+
+        yield line_number, stripped, scopes.copy(), "content"
+
+    if scopes:
+        kind, name = scopes[-1]
+        label = f" {name}" if name else ""
+        raise ValueError(f"unclosed Lean {kind}{label}")
+
+
+def declared_namespaces(lines: list[str]) -> set[str]:
+    """Return fully-qualified namespaces declared by nested scope commands."""
+    return {
+        _current_namespace(scopes)
+        for _, _, scopes, command in _scoped_lines(lines)
+        if command == "namespace"
+    }
+
+
+def theorem_declarations(lines: list[str]) -> Iterator[tuple[str, str, bool]]:
+    """Yield ``(namespace, name, is_private)`` for named theorem/lemma headers.
+
+    Comments and strings cannot create phantom declarations. Namespace and
+    section scopes are tracked independently, including qualified ``end``
+    labels. Attributes and declaration modifiers may continue on later lines.
+    """
+    pending_attribute_depth = 0
+    pending_modifiers: list[str] = []
+
+    for line_number, stripped, scopes, command in _scoped_lines(lines):
+        if command in {"namespace", "section", "end"}:
             pending_attribute_depth = 0
             pending_modifiers.clear()
             continue
@@ -246,12 +260,6 @@ def theorem_declarations(lines: list[str]) -> Iterator[tuple[str, str, bool]]:
         raise ValueError("unterminated Lean attribute")
     if pending_modifiers:
         raise ValueError("declaration modifiers are not followed by a theorem or lemma")
-    if scopes:
-        kind, name = scopes[-1]
-        label = f" {name}" if name else ""
-        raise ValueError(f"unclosed Lean {kind}{label}")
-
-
 def ad_hoc_axiom_declarations(lines: list[str]) -> Iterator[tuple[int, str]]:
     """Yield source lines declaring `axiom` or `constant`, including attributes."""
     source = strip_comments_and_strings("\n".join(lines))

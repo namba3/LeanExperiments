@@ -16,6 +16,9 @@ ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
 RECORD_START = re.compile(
     r"^'([^']+)' (?:depends on axioms: \[(.*)|does not depend on any axioms)$"
 )
+ENVIRONMENT_PROP_RECORD = re.compile(
+    r"VERIFICATION_ENV_PROP\|(?:theorem|axiom|def|opaque|inductive|constructor|recursor|quot)\|([^\s|]+)$"
+)
 
 
 def finite_audit_name(name: str) -> bool:
@@ -81,6 +84,41 @@ def parse_report(path: Path) -> list[tuple[str, set[str]]]:
     return records
 
 
+def parse_environment_inventory(path: Path) -> set[str]:
+    """Parse the Lean Environment's proposition-typed declaration inventory."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as error:
+        raise ValueError(f"cannot read environment inventory {path}: {error}") from error
+    declarations: set[str] = set()
+    for number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        match = ENVIRONMENT_PROP_RECORD.search(line)
+        if not match:
+            raise ValueError(f"{path}:{number}: unrecognized Lean environment inventory output")
+        declaration = match.group(1)
+        if declaration in declarations:
+            raise ValueError(f"{path}:{number}: duplicate environment declaration {declaration}")
+        declarations.add(declaration)
+    if not declarations:
+        raise ValueError(f"{path}: Lean environment inventory is empty")
+    return declarations
+
+
+def compare_environment_inventory(
+    declarations: set[str], manifest: dict[str, list[str]]
+) -> tuple[set[str], set[str]]:
+    """Return unregistered public declarations and stale public registrations."""
+    registered = {
+        declaration
+        for group, names in manifest.items()
+        if not group.endswith("_private")
+        for declaration in names
+    }
+    return declarations - registered, registered - declarations
+
+
 def main(arguments: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -138,6 +176,11 @@ def main(arguments: list[str]) -> int:
         metavar="PATH",
         help="append a proof-scope and native-dependency summary for GitHub Actions",
     )
+    parser.add_argument(
+        "--environment-inventory",
+        metavar="PATH",
+        help="compare Lean's proposition declarations with public manifest entries",
+    )
     options = parser.parse_args(arguments)
     if not options.audit:
         parser.error("at least one --audit GROUP REPORT is required")
@@ -157,6 +200,27 @@ def main(arguments: list[str]) -> int:
             parser.error(f"manifest group {group!r} contains an empty or invalid theorem name")
         if len(set(theorems)) != len(theorems):
             parser.error(f"manifest group {group!r} contains duplicate theorem names")
+
+    if options.environment_inventory:
+        try:
+            environment_declarations = parse_environment_inventory(
+                Path(options.environment_inventory)
+            )
+        except ValueError as error:
+            parser.error(str(error))
+        unregistered, stale = compare_environment_inventory(
+            environment_declarations, manifest
+        )
+        if unregistered:
+            parser.error(
+                "Lean Environment declarations missing from public audit groups: "
+                + ", ".join(sorted(unregistered))
+            )
+        if stale:
+            parser.error(
+                "public manifest entries absent from Lean Environment: "
+                + ", ".join(sorted(stale))
+            )
 
     groups: set[str] = set()
     reports: set[str] = set()
@@ -374,7 +438,7 @@ def main(arguments: list[str]) -> int:
         total += len(records)
 
         for theorem, axioms in records:
-            if not group.endswith("_private"):
+            if not group.endswith("_private") and group != "environment_generated":
                 scope = "finite" if group.endswith("_finite") else "general"
                 has_native_dependency = any(
                     is_registered_native_decide_axiom(axiom, native_decide_targets)

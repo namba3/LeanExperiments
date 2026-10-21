@@ -12,31 +12,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from check_lean_sources import check_sources  # noqa: E402
 from check_verification_axioms import main as check_axioms_main  # noqa: E402
+from check_verification_axioms import compare_environment_inventory  # noqa: E402
+from check_verification_axioms import parse_environment_inventory  # noqa: E402
 from check_verification_axioms import parse_report  # noqa: E402
 from audit_private_module_axioms import private_theorems  # noqa: E402
 from verification_source_declarations import (  # noqa: E402
     ad_hoc_axiom_declarations,
+    declared_namespaces,
     theorem_declarations,
 )
 
 
 class SourceDeclarationScannerTests(unittest.TestCase):
     def test_tracks_nested_namespaces_sections_and_qualified_ends(self) -> None:
-        declarations = list(
-            theorem_declarations(
-                [
-                    "namespace Outer",
-                    "section Local",
-                    "namespace Inner.Deep",
-                    "@[simp] private lemma hidden : True := by trivial",
-                    "end Inner.Deep",
-                    "theorem visible : True := by trivial",
-                    "end Local",
-                    "lemma outerLemma : True := by trivial",
-                    "end Outer",
-                ]
-            )
-        )
+        source = [
+            "namespace Outer",
+            "section Local",
+            "namespace Inner.Deep",
+            "@[simp] private lemma hidden : True := by trivial",
+            "end Inner.Deep",
+            "theorem visible : True := by trivial",
+            "end Local",
+            "lemma outerLemma : True := by trivial",
+            "end Outer",
+        ]
+        declarations = list(theorem_declarations(source))
         self.assertEqual(
             declarations,
             [
@@ -44,6 +44,10 @@ class SourceDeclarationScannerTests(unittest.TestCase):
                 ("Outer", "visible", False),
                 ("Outer", "outerLemma", False),
             ],
+        )
+        self.assertEqual(
+            declared_namespaces(source),
+            {"Outer", "Outer.Inner.Deep"},
         )
 
     def test_handles_multiline_nested_attributes_and_modifiers(self) -> None:
@@ -150,6 +154,45 @@ class SourceTrustScannerTests(unittest.TestCase):
 
 
 class KernelAuditReportTests(unittest.TestCase):
+    def test_parses_and_compares_lean_environment_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "environment.txt"
+            report.write_text(
+                "audit.lean:4: info: VERIFICATION_ENV_PROP|theorem|Example.proof\n"
+                "audit.lean:5: info: VERIFICATION_ENV_PROP|def|Example.proofDef\n",
+                encoding="utf-8",
+            )
+            declarations = parse_environment_inventory(report)
+            self.assertEqual(
+                declarations,
+                {"Example.proof", "Example.proofDef"},
+            )
+            self.assertEqual(
+                compare_environment_inventory(
+                    declarations,
+                    {
+                        "general": ["Example.proof"],
+                        "legacy_private": ["Example.hidden"],
+                    },
+                ),
+                ({"Example.proofDef"}, set()),
+            )
+
+    def test_environment_inventory_rejects_duplicate_and_unknown_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "environment.txt"
+            report.write_text(
+                "VERIFICATION_ENV_PROP|theorem|Example.proof\n"
+                "VERIFICATION_ENV_PROP|theorem|Example.proof\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate environment declaration"):
+                parse_environment_inventory(report)
+
+            report.write_text("Lean reported an import warning\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unrecognized Lean environment"):
+                parse_environment_inventory(report)
+
     def test_parses_axiom_free_and_multiline_axiom_records(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / "audit.txt"
