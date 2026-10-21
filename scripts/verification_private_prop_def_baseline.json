@@ -1,0 +1,10 @@
+[
+  "LeanExperiments.Verification.PrimeFactors.Spec::LeanExperiments.Verification.PrimeFactors.ascendingCheck_eq_true_of_pairwise._f",
+  "LeanExperiments.Verification.PrimeFactors.Spec::LeanExperiments.Verification.PrimeFactors.ascendingCheck_eq_true_of_pairwise.match_1_1",
+  "LeanExperiments.Verification.PrimeFactors.Spec::LeanExperiments.Verification.PrimeFactors.ascendingCheck_pairwise_aux._f",
+  "LeanExperiments.Verification.PrimeFactors.Spec::LeanExperiments.Verification.PrimeFactors.ascendingCheck_pairwise_aux.match_1_1",
+  "LeanExperiments.Verification.Sorting.Spec::LeanExperiments.Verification.Sorting.Spec.ascending_nodup_pairwise_lt._f",
+  "LeanExperiments.Verification.Sorting.Spec::LeanExperiments.Verification.Sorting.Spec.ascending_nodup_pairwise_lt.match_1_1",
+  "LeanExperiments.Verification.Sorting.Spec::LeanExperiments.Verification.Sorting.Spec.pairwise_lt_nodup._f",
+  "LeanExperiments.Verification.Sorting.Spec::LeanExperiments.Verification.Sorting.Spec.pairwise_lt_nodup.match_1_1"
+]

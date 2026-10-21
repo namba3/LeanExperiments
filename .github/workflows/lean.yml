@@ -26,6 +26,12 @@ jobs:
         run: python3 scripts/check_lean_sources.py
       - name: Inventory proposition declarations from Lean Environment
         run: lake env lean scripts/verification_environment_inventory.lean > .lake/verification-environment.txt 2>&1
+      - name: Check private proposition-definition inventory
+        run: |
+          lake env lean scripts/verification_private_prop_def_inventory.lean > .lake/verification-private-prop-defs.txt 2>&1
+          python3 scripts/check_private_prop_def_inventory.py \
+            --baseline scripts/verification_private_prop_def_baseline.json \
+            .lake/verification-private-prop-defs.txt
       - name: Audit kernel dependencies of public, private, and finite theorems
         run: |
           lake env lean scripts/verification_axiom_audit.lean > .lake/verification-axioms-module.txt 2>&1

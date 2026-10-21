@@ -28,7 +28,7 @@
 
 - `LeanExperiments/Verification/` に theorem / lemma を追加・削除・改名した場合は、一般証明か有限検査かを根拠とともに分類し、`.github/workflows/lean.yml` のソース対応、`scripts/verification_axiom_manifest.json`、対応する Lean の `#print axioms` 監査対象を同期する。定理名だけから有限検査と推定させず、有限範囲が分かる名称・コメント・定義を保つ。
 - `native_decide` を一般定理で使う場合は、対象定理と生成される補助公理を専用監査グループに明示登録する。容易にカーネル内計算で済む範囲は `rfl`・`decide` 等を検討するが、証明コストを大きく増やす置換は避ける。
-- 証明を持つ `def` や `instance` は theorem / lemma ソース列挙とは別に扱う。現在は公開 proposition 型宣言を Lean Environment から列挙して public manifest と照合する。private 内部名はその一覧から除かれ、private theorem / lemma は元ソースの監査で扱うが、private proposition 定義や instance は自動列挙されないため、追加時に別途監査方法を決める。既存検査の検出範囲を証明全体の完全性として説明しない。
+- 証明を持つ `def` や `instance` は theorem / lemma ソース列挙とは別に扱う。公開 proposition 型宣言は Lean Environment から列挙して public manifest と照合し、private theorem / lemma は元ソースの監査で扱う。private proposition-valued `def` / `opaque` は Lean Environment から列挙し、レビュー済み補助宣言の baseline と照合する。新しい source declaration が見つかったら、登録だけを先行させず、推移的な公理依存を明示的に監査してから baseline と監査対象を更新する。instance は別名生成や型の形に注意し、検出範囲を証明全体の完全性として説明しない。
 - 大きな証明ファイルを分割するときは、先に宣言間の依存を調べ、仕様・不変条件・操作補題・停止性・一般正当性・有限検査の責務と依存方向を決める。元の `Spec.lean` を互換入口として維持し、公開定理の名前・型・公理依存を変更前後で比較する。分割自体を目的にせず、循環 import や API の不要な可視化を作らない。
 - 監査スクリプトや manifest 形式を変更した場合は、受理すべき入力と拒否すべき入力の両方を `scripts/tests/` に追加する。名前空間の入れ子、`section`、属性・修飾子、private 宣言、欠落・重複・未登録対象、壊れた監査出力を必要に応じて含め、CI と同じ公理監査を再実行する。
 - AI による証明生成は小さな責務単位で行い、仕様との対応、帰納法の不変条件、依存補題を確認してから統合する。大量の補助定理を追加する際は、再利用可能性と監査・保守コストも見直す。

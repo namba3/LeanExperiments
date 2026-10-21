@@ -11,6 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from check_lean_sources import check_sources  # noqa: E402
+from check_private_prop_def_inventory import main as check_private_prop_inventory_main  # noqa: E402
+from check_private_prop_def_inventory import parse_inventory as parse_private_prop_inventory  # noqa: E402
 from check_verification_axioms import main as check_axioms_main  # noqa: E402
 from check_verification_axioms import compare_environment_inventory  # noqa: E402
 from check_verification_axioms import parse_environment_inventory  # noqa: E402
@@ -154,6 +156,92 @@ class SourceTrustScannerTests(unittest.TestCase):
 
 
 class KernelAuditReportTests(unittest.TestCase):
+    def test_private_proposition_inventory_requires_exact_reviewed_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline = root / "baseline.json"
+            report = root / "private.txt"
+            baseline.write_text('["Example.hidden"]\n', encoding="utf-8")
+            report.write_text(
+                "audit.lean:4: info: VERIFICATION_PRIVATE_PROP_DEF|Example.hidden\n"
+                "audit.lean:5: info: VERIFICATION_PRIVATE_PROP_AXIOMS|Example.hidden|\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                parse_private_prop_inventory(report),
+                {"Example.hidden"},
+            )
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(
+                    check_private_prop_inventory_main(
+                        ["--baseline", str(baseline), str(report)]
+                    ),
+                    0,
+                )
+            report.write_text(
+                "VERIFICATION_PRIVATE_PROP_DEF|Example.hidden\n"
+                "VERIFICATION_PRIVATE_PROP_AXIOMS|Example.hidden|\n"
+                "VERIFICATION_PRIVATE_PROP_DEF|Example.newDefinition\n"
+                "VERIFICATION_PRIVATE_PROP_AXIOMS|Example.newDefinition|sorryAx\n",
+                encoding="utf-8",
+            )
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                self.assertEqual(
+                    check_private_prop_inventory_main(
+                        ["--baseline", str(baseline), str(report)]
+                    ),
+                    1,
+                )
+            self.assertIn("explicit review", stderr.getvalue())
+
+    def test_private_proposition_inventory_rejects_duplicate_or_unknown_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "private.txt"
+            report.write_text(
+                "VERIFICATION_PRIVATE_PROP_DEF|Example.hidden\n"
+                "VERIFICATION_PRIVATE_PROP_DEF|Example.hidden\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate private proposition"):
+                parse_private_prop_inventory(report)
+            report.write_text("unexpected Lean output\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unrecognized private proposition"):
+                parse_private_prop_inventory(report)
+
+    def test_private_proposition_axioms_must_be_complete_and_approved(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline = root / "baseline.json"
+            report = root / "private.txt"
+            baseline.write_text('["Example.hidden"]\n', encoding="utf-8")
+            report.write_text(
+                "VERIFICATION_PRIVATE_PROP_DEF|Example.hidden\n"
+                "VERIFICATION_PRIVATE_PROP_AXIOMS|Example.hidden|propext\n",
+                encoding="utf-8",
+            )
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(
+                    check_private_prop_inventory_main(
+                        ["--baseline", str(baseline), str(report)]
+                    ),
+                    0,
+                )
+            report.write_text(
+                "VERIFICATION_PRIVATE_PROP_DEF|Example.hidden\n"
+                "VERIFICATION_PRIVATE_PROP_AXIOMS|Example.hidden|sorryAx\n",
+                encoding="utf-8",
+            )
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                self.assertEqual(
+                    check_private_prop_inventory_main(
+                        ["--baseline", str(baseline), str(report)]
+                    ),
+                    1,
+                )
+            self.assertIn("unapproved axioms", stderr.getvalue())
+
     def test_parses_and_compares_lean_environment_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / "environment.txt"
