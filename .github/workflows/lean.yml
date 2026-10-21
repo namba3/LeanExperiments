@@ -1,0 +1,97 @@
+name: Lean verification
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build all Lean targets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          build: true
+          test: false
+      - name: Run CLI smoke checks
+        run: python3 scripts/test_cli.py
+      - name: Reject proof holes and ad hoc axioms
+        run: |
+          if rg -n '\b(sorry|admit|sorryAx)\b|^[[:space:]]*(?:(private|protected|unsafe|noncomputable)[[:space:]]+)*(axiom|constant)\b' --glob '*.lean' .; then
+            echo 'Lean sources must not contain proof holes or ad hoc axiom declarations.'
+            exit 1
+          else
+            scan_status=$?
+            if [ "$scan_status" -ne 1 ]; then
+              echo "Lean source scan failed with rg exit status $scan_status."
+              exit "$scan_status"
+            fi
+          fi
+      - name: Audit kernel dependencies of public, private, and finite theorems
+        run: |
+          lake env lean scripts/verification_axiom_audit.lean > .lake/verification-axioms-module.txt 2>&1
+          lake env lean scripts/verification_axiom_audit_module_native.lean > .lake/verification-axioms-module-native.txt 2>&1
+          lake env lean scripts/verification_axiom_audit_legacy.lean > .lake/verification-axioms-legacy.txt 2>&1
+          lake env lean scripts/verification_axiom_audit_module_finite.lean > .lake/verification-axioms-module-finite.txt 2>&1
+          lake env lean scripts/verification_axiom_audit_legacy_finite.lean > .lake/verification-axioms-legacy-finite.txt 2>&1
+          lake env lean scripts/verification_axiom_audit_private_legacy.lean > .lake/verification-axioms-private-legacy.txt 2>&1
+          python3 scripts/audit_private_module_axioms.py > .lake/verification-axioms-private-module.txt 2>&1
+          if rg -n 'sorryAx' .lake/verification-axioms-module.txt .lake/verification-axioms-module-native.txt .lake/verification-axioms-legacy.txt .lake/verification-axioms-module-finite.txt .lake/verification-axioms-legacy-finite.txt .lake/verification-axioms-private-module.txt .lake/verification-axioms-private-legacy.txt; then
+            echo 'An audited theorem depends on sorryAx.'
+            exit 1
+          else
+            audit_scan_status=$?
+            if [ "$audit_scan_status" -ne 1 ]; then
+              echo "Kernel dependency scan failed with rg exit status $audit_scan_status."
+              exit "$audit_scan_status"
+            fi
+          fi
+          python3 scripts/check_verification_axioms.py \
+            --manifest scripts/verification_axiom_manifest.json \
+            --audit module .lake/verification-axioms-module.txt \
+            --audit module_native .lake/verification-axioms-module-native.txt \
+            --audit legacy .lake/verification-axioms-legacy.txt \
+            --audit module_finite .lake/verification-axioms-module-finite.txt \
+            --audit legacy_finite .lake/verification-axioms-legacy-finite.txt \
+            --audit module_private .lake/verification-axioms-private-module.txt \
+            --audit legacy_private .lake/verification-axioms-private-legacy.txt \
+            --native-decide-group module_finite \
+            --native-decide-group module_native \
+            --native-decide-group legacy_finite \
+            --native-decide-group module_private \
+            --native-decide-group legacy_private \
+            --finite-root LeanExperiments/Verification \
+            --general-root LeanExperiments/Verification \
+            --finite-source module_finite LeanExperiments/Verification/Factorial/Spec.lean LeanExperiments.Verification.Factorial \
+            --finite-source module_finite LeanExperiments/Verification/Fibonacci/Spec.lean LeanExperiments.Verification.Fibonacci \
+            --finite-source module_finite LeanExperiments/Verification/PrimeFactors/Spec.lean LeanExperiments.Verification.PrimeFactors \
+            --finite-source legacy_finite LeanExperiments/Verification/Sorting/Spec.lean LeanExperiments.Verification.Sorting.Spec \
+            --finite-source legacy_finite LeanExperiments/Verification/Sorting/Comparisons.lean LeanExperiments.Verification.Sorting.Comparisons \
+            --finite-source legacy_finite LeanExperiments/Verification/MergeSort/Spec.lean LeanExperiments.Verification.MergeSort \
+            --finite-source legacy_finite LeanExperiments/Verification/QuickSort/Spec.lean LeanExperiments.Verification.QuickSort \
+            --finite-source legacy_finite LeanExperiments/Verification/HeapSort/Spec.lean LeanExperiments.Verification.HeapSort.Spec \
+            --finite-source legacy_finite LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
+            --finite-source legacy_finite LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
+            --finite-source legacy_finite LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \
+            --finite-source legacy_finite LeanExperiments/Verification/CLI/Sorting.lean LeanExperiments.Verification.CLI.Sorting \
+            --general-source module LeanExperiments/Verification/Factorial/Spec.lean LeanExperiments.Verification.Factorial \
+            --general-source module LeanExperiments/Verification/Fibonacci/Spec.lean LeanExperiments.Verification.Fibonacci \
+            --general-source module LeanExperiments/Verification/PrimeFactors/Spec.lean LeanExperiments.Verification.PrimeFactors \
+            --general-source legacy LeanExperiments/Verification/Sorting/Spec.lean LeanExperiments.Verification.Sorting.Spec \
+            --general-source legacy LeanExperiments/Verification/Sorting/Comparisons.lean LeanExperiments.Verification.Sorting.Comparisons \
+            --general-source legacy LeanExperiments/Verification/MergeSort/Spec.lean LeanExperiments.Verification.MergeSort \
+            --general-source legacy LeanExperiments/Verification/QuickSort/Spec.lean LeanExperiments.Verification.QuickSort \
+            --general-source legacy LeanExperiments/Verification/HeapSort/Spec.lean LeanExperiments.Verification.HeapSort.Spec \
+            --general-source legacy LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
+            --general-source legacy LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
+            --general-source legacy LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \
+            --general-source legacy LeanExperiments/Verification/CLI/Sorting.lean LeanExperiments.Verification.CLI.Sorting
+          cat .lake/verification-axioms-module.txt .lake/verification-axioms-module-native.txt \
+            .lake/verification-axioms-legacy.txt \
+            .lake/verification-axioms-module-finite.txt .lake/verification-axioms-legacy-finite.txt \
+            .lake/verification-axioms-private-module.txt .lake/verification-axioms-private-legacy.txt

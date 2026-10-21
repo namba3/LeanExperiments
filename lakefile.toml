@@ -1,0 +1,65 @@
+name = "lean_experiments"
+version = "0.1.0"
+defaultTargets = [
+    "LeanExperiments",
+    "LeanExperiments.Verification.CLI.HeapSort",
+    "LeanExperiments.Verification.CLI.Sorting",
+    "heapsort",
+    "heapsort-rec",
+    "factorial",
+    "prime-factors",
+    "fibonacci",
+    "median",
+    "mergesort",
+    "mergesort-loop",
+    "quicksort",
+    "quicksort-loop",
+]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.35.0"
+
+[[lean_lib]]
+name = "LeanExperiments"
+
+[[lean_exe]]
+name = "heapsort"
+root = "Apps.HeapSort"
+
+[[lean_exe]]
+name = "heapsort-rec"
+root = "Apps.HeapSortRecursive"
+
+[[lean_exe]]
+name = "factorial"
+root = "Apps.Factorial"
+
+[[lean_exe]]
+name = "prime-factors"
+root = "Apps.PrimeFactors"
+
+[[lean_exe]]
+name = "fibonacci"
+root = "Apps.Fibonacci"
+
+[[lean_exe]]
+name = "median"
+root = "Apps.Median"
+
+[[lean_exe]]
+name = "mergesort"
+root = "Apps.MergeSort"
+
+[[lean_exe]]
+name = "mergesort-loop"
+root = "Apps.MergeSortIterative"
+
+[[lean_exe]]
+name = "quicksort"
+root = "Apps.QuickSort"
+
+[[lean_exe]]
+name = "quicksort-loop"
+root = "Apps.QuickSortIterative"

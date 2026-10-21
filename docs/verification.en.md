@@ -1,0 +1,39 @@
+# Verification catalog
+
+This catalog separates general theorems for arbitrary inputs from finite computational checks. A finite check applies only to its enumerated inputs; it is not a general correctness proof.
+
+[日本語](verification.md) | [README](../README.en.md)
+
+## Overview
+
+| Area | General theorems | Proof status or boundary |
+| --- | --- | --- |
+| [CLI input](verification/stateful.en.md#cli-input) | Whitespace splitting agrees with the character-list specification; multi-value and single-value parsers agree with the `List.mapM` model | Standard-input IO layer |
+| [Factorial](verification/arithmetic.en.md#factorial) | Implementation agrees with its recursive specification; monotonicity, bounds, and divisibility | General implementation correctness is proved |
+| [Fibonacci](verification/arithmetic.en.md#fibonacci) | Fast doubling agrees with the recursive specification; recurrence, addition, and periodicity results | General implementation correctness is proved |
+| [Prime factorization](verification/arithmetic.en.md#prime-factorization) | All-input implementation correctness against `FactorsCorrect`; specification-derived factor properties and uniqueness; product, factor bounds, divisibility, ascending order, and loop invariants | General proof complete; finite checks cover selected boundaries and large values |
+| [Sorting](verification/sorting.en.md) | Arbitrary-input correctness and independent-checker acceptance for recursive and loop-based quick sort, merge sort, and heap sort; pure output strings from all sorting CLIs agree with independent MergeSort | General implementation correctness is proved; standard input/output IO is outside the scope |
+| [Running median](verification/stateful.en.md#running-median) | Preservation under inserting any value into any invariant state; the `ofArray` invariant for arbitrary input lengths; success of the all-prefix checker; agreement of the median and its CLI-formatted output with the independent sorting specification; invariance under input permutations | General proof complete; finite checks cover only the domains listed below |
+
+## Finite-check coverage
+
+| Area | Finite evidence |
+| --- | --- |
+| CLI input | Parser boundary cases: empty, whitespace, invalid, and large values |
+| Factorial | No separate bounded-domain check listed |
+| Fibonacci | Indices 0–512, powers of two and neighbors, selected exact values |
+| Prime factorization | 0–20,000, values around squares, and large inputs |
+| Sorting | Exhaustive domains, boundary lengths, and 64-bit values |
+| Running median | Exhaustive domains of 87,381 and 97,656 arrays, plus boundary sequences |
+
+## Details
+
+- [Arithmetic algorithms](verification/arithmetic.en.md): factorial, Fibonacci, and prime factorization
+- [Sorting](verification/sorting.en.md): shared specification, quick sort, merge sort, and heap sort
+- [CLI and stateful processing](verification/stateful.en.md): pure CLI parsers and running median
+
+Each detail page separates general theorems, finite checks, and execution boundaries outside the formal proofs.
+
+## Continuous build
+
+GitHub Actions runs `lake build` for all default targets, including the verification modules. It also scans all Lean sources for `sorry`, `admit`, and ad hoc `axiom` or `constant` declarations, then audits the kernel dependencies of every public general theorem, private helper theorem, bounded regression check, and example under Verification. For module-system files, where private names are hidden after import, CI recompiles the source during the audit to collect their dependencies. Ordinary general and private theorem groups may depend only on `propext`, `Classical.choice`, and `Quot.sound`. Theorems whose general inductive proofs use `native_decide` for base values or finite residue tables are audited in a separate explicit group; generated helper axioms are allowed only for registered theorem targets across that group and the finite-check groups. CI requires every Lean file under Verification to appear in both general and finite source mappings, and requires discovered declarations to match the audit manifest, detecting omitted files, unaudited declarations, and stale registrations. All audit groups reject `sorryAx` and unregistered theorem dependencies. A successful build confirms that Lean accepts the definitions and proofs. Finite computational checks and CLI standard-input/output execution outside the formal proofs are separate evidence.
