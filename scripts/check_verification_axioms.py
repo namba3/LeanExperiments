@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-from verification_source_declarations import NAMESPACE_DECLARATION, theorem_declarations
+from verification_source_declarations import declared_namespaces, theorem_declarations
 
 
 ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -52,8 +52,12 @@ def parse_report(path: Path) -> list[tuple[str, set[str]]]:
     while index < len(lines):
         match = RECORD_START.match(lines[index])
         if not match:
-            index += 1
-            continue
+            if not lines[index].strip():
+                index += 1
+                continue
+            raise ValueError(
+                f"{path}:{index + 1}: unrecognized kernel-axiom audit output"
+            )
 
         theorem = match.group(1)
         payload = match.group(2)
@@ -129,6 +133,11 @@ def main(arguments: list[str]) -> int:
         metavar="DIRECTORY",
         help="require every Lean file under DIRECTORY to have a --general-source entry",
     )
+    parser.add_argument(
+        "--github-summary",
+        metavar="PATH",
+        help="append a proof-scope and native-dependency summary for GitHub Actions",
+    )
     options = parser.parse_args(arguments)
     if not options.audit:
         parser.error("at least one --audit GROUP REPORT is required")
@@ -191,18 +200,16 @@ def main(arguments: list[str]) -> int:
             lines = path.read_text(encoding="utf-8").splitlines()
         except OSError as error:
             parser.error(f"cannot read finite source {path}: {error}")
-        declared_namespaces = {
-            match.group(1)
-            for line in lines
-            if (match := NAMESPACE_DECLARATION.match(line))
-        }
-        if namespace not in declared_namespaces:
+        if namespace not in declared_namespaces(lines):
             parser.error(f"{path}: expected namespace {namespace!r}")
-        discovered = {
-            f"{declared_namespace}.{name}"
-            for declared_namespace, name, is_private in theorem_declarations(lines)
-            if not is_private and finite_audit_name(name)
-        }
+        try:
+            discovered = {
+                f"{declared_namespace}.{name}"
+                for declared_namespace, name, is_private in theorem_declarations(lines)
+                if not is_private and finite_audit_name(name)
+            }
+        except ValueError as error:
+            parser.error(f"{path}: cannot safely scan theorem declarations: {error}")
         finite_sources.setdefault(group, set()).update(discovered)
 
     for directory in options.finite_root:
@@ -244,14 +251,12 @@ def main(arguments: list[str]) -> int:
             lines = path.read_text(encoding="utf-8").splitlines()
         except OSError as error:
             parser.error(f"cannot read general source {path}: {error}")
-        declared_namespaces = {
-            match.group(1)
-            for line in lines
-            if (match := NAMESPACE_DECLARATION.match(line))
-        }
-        if namespace not in declared_namespaces:
+        if namespace not in declared_namespaces(lines):
             parser.error(f"{path}: expected namespace {namespace!r}")
-        declarations = list(theorem_declarations(lines))
+        try:
+            declarations = list(theorem_declarations(lines))
+        except ValueError as error:
+            parser.error(f"{path}: cannot safely scan theorem declarations: {error}")
         discovered = {
             f"{declared_namespace}.{name}"
             for declared_namespace, name, is_private in declarations
@@ -321,6 +326,11 @@ def main(arguments: list[str]) -> int:
 
     failed = False
     total = 0
+    classified_counts = {
+        (scope, native): 0
+        for scope in ("general", "finite")
+        for native in (False, True)
+    }
     for group, filename in options.audit:
         path = Path(filename)
         try:
@@ -364,6 +374,13 @@ def main(arguments: list[str]) -> int:
         total += len(records)
 
         for theorem, axioms in records:
+            if not group.endswith("_private"):
+                scope = "finite" if group.endswith("_finite") else "general"
+                has_native_dependency = any(
+                    is_registered_native_decide_axiom(axiom, native_decide_targets)
+                    for axiom in axioms
+                )
+                classified_counts[(scope, has_native_dependency)] += 1
             unexpected = axioms - ALLOWED_AXIOMS
             if group in native_decide_groups:
                 unexpected = {
@@ -380,6 +397,30 @@ def main(arguments: list[str]) -> int:
 
     if failed:
         return 1
+    if options.github_summary:
+        summary_path = Path(options.github_summary)
+        summary = [
+            "## Lean verification trust summary",
+            "",
+            "| Proof scope | Native-computation helper dependency | Theorems |",
+            "| --- | --- | ---: |",
+            f"| General (A) | No | {classified_counts[('general', False)]} |",
+            f"| General (B) | Yes | {classified_counts[('general', True)]} |",
+            f"| Finite checks (C) | No | {classified_counts[('finite', False)]} |",
+            f"| Finite checks (C) | Yes | {classified_counts[('finite', True)]} |",
+            "",
+            "A/B describe general theorems; C identifies bounded checks. The trust-dependency column is reported independently.",
+            "",
+        ]
+        try:
+            with summary_path.open("a", encoding="utf-8") as summary_file:
+                summary_file.write("\n".join(summary))
+        except OSError as error:
+            print(
+                f"cannot write GitHub Actions summary {summary_path}: {error}",
+                file=sys.stderr,
+            )
+            return 1
     print(
         f"All {total} registered theorems passed their kernel-axiom policies "
         "(native_decide helpers are limited to explicitly registered targets)."

@@ -22,6 +22,10 @@ The median CLI's numerator and denominator formatter is also a pure function, `f
 
 Lean computation checks empty and whitespace-only input, space-separated values, integers wider than 64 bits, invalid tokens, and empty, whitespace-only, and multiple-value inputs for the single-value parser.
 
+### Runtime resource boundary
+
+The general parser theorems establish value and error semantics for every finite input string; they do not bound memory or running time. `readNatList` and `readNat` currently read standard input through EOF into one string, then create split tokens and a result array. The original input, tokens, and array can therefore occupy memory at the same time. Memory limits, large-input performance, and recursion depth have not been measured or bounded. Alongside QuickSort's pivot-degeneration cases, whole-input buffering is an operational limitation.
+
 ## Running median
 
 Source: `LeanExperiments/Verification/RunningMedian/Spec.lean`

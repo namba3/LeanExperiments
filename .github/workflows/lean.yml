@@ -20,6 +20,8 @@ jobs:
           test: false
       - name: Run CLI smoke checks
         run: python3 scripts/test_cli.py
+      - name: Test verification audit tooling
+        run: python3 -m unittest discover -s scripts/tests -v
       - name: Reject proof holes and ad hoc axioms
         run: python3 scripts/check_lean_sources.py
       - name: Audit kernel dependencies of public, private, and finite theorems
@@ -78,7 +80,8 @@ jobs:
             --general-source legacy LeanExperiments/Verification/RunningMedian/Spec.lean LeanExperiments.Verification.RunningMedian \
             --general-source legacy LeanExperiments/Verification/CLI/Spec.lean LeanExperiments.Verification.CLI \
             --general-source legacy LeanExperiments/Verification/CLI/HeapSort.lean LeanExperiments.Verification.CLI.HeapSort \
-            --general-source legacy LeanExperiments/Verification/CLI/Sorting.lean LeanExperiments.Verification.CLI.Sorting
+            --general-source legacy LeanExperiments/Verification/CLI/Sorting.lean LeanExperiments.Verification.CLI.Sorting \
+            --github-summary "$GITHUB_STEP_SUMMARY"
           cat .lake/verification-axioms-module.txt .lake/verification-axioms-module-native.txt \
             .lake/verification-axioms-legacy.txt \
             .lake/verification-axioms-module-finite.txt .lake/verification-axioms-legacy-finite.txt \

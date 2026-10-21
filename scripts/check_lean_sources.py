@@ -9,11 +9,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from verification_source_declarations import (
+    ad_hoc_axiom_declarations,
+    strip_comments_and_strings,
+)
+
 
 PROOF_HOLE = re.compile(r"\b(sorry|admit|sorryAx)\b")
-AD_HOC_AXIOM = re.compile(
-    r"^[ \t]*(?:(?:private|protected|unsafe|noncomputable)[ \t]+)*(?:axiom|constant)\b"
-)
 
 
 def tracked_lean_sources() -> list[Path]:
@@ -29,9 +31,21 @@ def check_sources(paths: list[Path], *, reject_sorry_ax_only: bool) -> bool:
     failed = False
     for path in paths:
         try:
-            lines = path.read_text(encoding="utf-8").splitlines()
+            source = path.read_text(encoding="utf-8")
+            lines = (
+                source.splitlines()
+                if reject_sorry_ax_only
+                else strip_comments_and_strings(source).splitlines()
+            )
+            forbidden_axioms = (
+                [] if reject_sorry_ax_only else list(ad_hoc_axiom_declarations(lines))
+            )
         except OSError as error:
             print(f"{path}: unable to read file: {error}", file=sys.stderr)
+            failed = True
+            continue
+        except ValueError as error:
+            print(f"{path}: cannot safely scan Lean declarations: {error}", file=sys.stderr)
             failed = True
             continue
 
@@ -40,11 +54,13 @@ def check_sources(paths: list[Path], *, reject_sorry_ax_only: bool) -> bool:
                 "sorryAx" in line
                 if reject_sorry_ax_only
                 else PROOF_HOLE.search(line) is not None
-                or AD_HOC_AXIOM.search(line) is not None
             )
             if has_violation:
                 print(f"{path}:{number}:{line}")
                 failed = True
+        for number, kind in forbidden_axioms:
+            print(f"{path}:{number}: ad hoc {kind} declaration")
+            failed = True
     return not failed
 
 

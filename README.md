@@ -74,11 +74,13 @@ Fibonacci は高速倍加法を用い、添字を半分にして再帰するた�
 - `LeanExperiments/`：再利用できるアルゴリズムと共通処理を置きます。
 - `LeanExperiments/Verification/`：仕様、補題、正しさの証明をアルゴリズムごとに置きます。
 
+アルゴリズムを利用するモジュールは `import LeanExperiments.Algorithms`、検証仕様と証明は `import LeanExperiments.Verification` から読み込めます。既存の `import LeanExperiments` は両方をまとめる互換用の入口として維持しています。
+
 ## 検証
 
 `LeanExperiments/Verification/` に仕様、補題、証明、有限領域の回帰確認を置いています。quick sort・merge sort・heap sort は再帰版とループ版の両方について任意入力での一般正当性を証明済みです。ループ版 quick sort は状態不変条件と停止測度を用いて再帰版との一致を証明し、共通仕様 `Correct` に接続しています。各アルゴリズムの証明範囲、有限領域、未完了事項は[検証カタログ](docs/verification.md)を参照してください。
 
-`LeanExperiments/Verification/` 以下のコードのほぼ全ては AI によって生成されています。証明が Lean に受理されることと、仕様や検証対象の選び方が適切であることは別なので、各証明の範囲と未完了事項は検証カタログで確認してください。GitHub Actions では Lean の全ターゲットをビルドし、公理依存を監査したうえで、CLI の入出力例も実行確認します。
+`LeanExperiments/Verification/` 以下のコードのほぼ全ては AI によって生成されています。証明が Lean に受理されることと、仕様や検証対象の選び方が適切であることは別なので、各証明の範囲と未完了事項は検証カタログで確認してください。GitHub Actions では Lean の全ターゲットをビルドし、監査機構の回帰テストと公理依存の監査を実行したうえで、CLI の入出力例も確認します。
 
 ## ライセンス
 

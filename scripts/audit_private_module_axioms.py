@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from verification_source_declarations import NAMESPACE_DECLARATION, theorem_declarations
+from verification_source_declarations import declared_namespaces, theorem_declarations
 
 
 SOURCES = {
@@ -22,12 +22,7 @@ SOURCES = {
 
 def private_theorems(source: Path, expected_namespace: str) -> list[str]:
     lines = source.read_text(encoding="utf-8").splitlines()
-    declared_namespaces = {
-        match.group(1)
-        for line in lines
-        if (match := NAMESPACE_DECLARATION.match(line))
-    }
-    if expected_namespace not in declared_namespaces:
+    if expected_namespace not in declared_namespaces(lines):
         raise ValueError(f"{source}: expected namespace {expected_namespace!r}")
     return [
         f"{namespace}.{name}"
