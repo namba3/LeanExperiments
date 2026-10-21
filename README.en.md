@@ -4,6 +4,8 @@
 
 A Lean 4 project for implementing algorithms and practicing by checking their behavior and properties. Algorithm implementations, command-line interfaces, and verification specifications and proofs are kept in separate areas.
 
+See the [documentation index](docs/README.md) for the full document list.
+
 ## Requirements
 
 - Lean 4.35.0 (managed by `elan` and pinned in `lean-toolchain`)

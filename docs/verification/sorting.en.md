@@ -53,6 +53,9 @@ The loop implementation is checked on sorted, reverse, all-equal, and periodic i
 - The Boolean sorting checker is equivalent to the logical specification of ascending output and element preservation. Any two outputs that pass for the same input are equal.
 - The logical max-heap parent-child condition is equivalent to its Boolean checker, and it implies that the root is at least every array element.
 - The heap-build specification implies preservation of array length and the sum of natural-number values. Both loop-based and recursive `popMax` return the root and fail exactly on an empty array.
+
+#### Abstract extraction contracts
+
 - A generic residual specification for extraction is equivalent to its Boolean checker. An extractor satisfying the contract produces a non-increasing sequence from a max heap and preserves input elements when combined with its remainder. With sufficient fuel, reversing the extraction sequence satisfies the shared sorting specification.
 - Extraction sequences from the same heap agree for any two sufficient fuel values. This follows because their reversals both satisfy the shared, unique sorting specification.
 - A partial extraction with fuel at most the heap size is a prefix of the completed extraction sequence from the same heap, relating intermediate and final results.
@@ -63,16 +66,25 @@ The loop implementation is checked on sorted, reverse, all-equal, and periodic i
 - A size-bounded contract also proves that every partial extraction sequence up to the heap length is descending, by composing completed-run correctness with the prefix theorem.
 - Within the same bound, the number of extracted elements equals `fuel`, proving that extraction does not stop early.
 - Reversing a partial extraction sequence under a bounded contract satisfies the shared `Ascending` specification, giving a sorted top-`fuel` result.
+
+#### Partial execution and resumption
+
 - By connecting the abstract extraction sequence to `drainRecursive`, its executable partial result is also ascending and has exactly `fuel` elements.
 - Resuming a partial drain from a descending accumulator also yields ascending output when every remaining heap value is bounded by the accumulator; the output length is the previous length plus `fuel`.
 - The partial `drainRecursive` output and remainder heap together preserve the count of values satisfying any Boolean predicate. This states the partition invariant directly for the output array and unprocessed heap.
 - When resuming from an existing accumulator, predicate counts in the prior output and heap are distributed across the resumed output and remainder heap. The proof does not require an ordering condition on the prior output.
 - Under a size-bounded extraction contract, partial resumption has a combined general contract for ascending output, the exact number of appended elements, and preservation of any Boolean predicate count. Ordering and element preservation can be checked from the same assumptions.
+
+#### Bounded supporting results
+
 - For inputs of length at most nine, if recursive heap construction returns a max heap, the recursive sorter is correct for arbitrary natural values. Proving the builder's heap invariant then composes with the existing size-nine extraction contract and general element preservation.
 - For length-nine inputs whose root is a maximum value, recursive heap sort is proved correct: the lower subtrees are heapified while the root stays fixed, then the size-nine extraction contract completes the proof. The theorem covers arbitrary values under the root-maximum precondition.
 - A unified theorem covers lengths up to nine under the same root-maximum premise; the premise is only needed at length nine because all shorter inputs already have unconditional proofs.
 - At length nine, the precondition is weakened further: it is enough that the root dominate its children after processing indices 3, 2, and 1. The subtree heap conditions are proved, so this exposes only the condition needed by the final sift-down.
 - A unified theorem covers lengths up to nine under this weaker condition; lengths up to eight remain unconditional, and the root-step condition is only needed at length nine.
+
+#### Partial-drain properties
+
 - Every value emitted by a partial `drainRecursive` run is at least each value extracted later in the completed run, transferring the top-k property to the recursive implementation.
 - Given a max-heap input and a size-bounded extraction contract, the completed `drainRecursive` output is ascending and a permutation of the input.
 - The drain proof also supports resumption: if the existing output is descending and every remaining heap value is no greater than its values, the combined result remains a sorted permutation.
@@ -85,13 +97,22 @@ The loop implementation is checked on sorted, reverse, all-equal, and periodic i
 - The same contract proves that the extracted element count is `min fuel input length`: enough fuel processes every element exactly once, while insufficient fuel processes exactly that many.
 - The weaker element-preservation and size-decrease contract alone also proves the exact remainder length and extracted count for every fuel, without requiring heap validity or extraction order.
 - Recursive heap construction preserves every input element as a permutation for arbitrary inputs, which also implies preservation of array length and the sum of values. This theorem does not establish the max-heap invariant.
+
+#### General correctness of the recursive implementation
+
 - Recursive heap construction produces a max heap from every input and preserves all elements as a permutation. Its invariant states that all parent-child edges at or above the next unprocessed index satisfy the heap condition; each sift-down extends this range toward the root. The independent Boolean checker accepts every constructed heap.
 - Recursive `popMax` satisfies root extraction, residual max-heap validity, and residual element preservation for max heaps of any size. Composing these results with the abstract extraction contract proves `Correct` for `heapSortRecursive` on arbitrary input lengths and natural-number values, and its output passes the independent Boolean checker.
 - For the recursive sorter at any input length, correctness is equivalent to output ascendingness. The general element-preservation and ascendingness proofs combine into the unrestricted `Correct` theorem. The independent Boolean checker also decides ascendingness exactly for every input.
 - For max-heap inputs of length at most nine, recursive heap construction leaves the input unchanged, and the max-heap extraction contract proves that `heapSortRecursive` sorts it correctly.
 - For arbitrary input lengths, `heapSortRecursive` preserves the input as a permutation, and therefore preserves array length and the sum of natural-number values. This conservation theorem is separate from and composes with the general sortedness proof.
 - For any fuel, heap, and existing output, recursive draining equals the reverse of the abstract maximum-extraction sequence appended to that output. This theorem connects the general extraction specification to the concrete recursive implementation.
+
+#### Agreement with the loop-based implementation
+
 - The imperative `siftDown` equals `siftDownRecursive` for every array and root position. This general proof composes the one-step state transition, invariant preservation, the stopping fixed point, and a decreasing measure. It transfers the general recursive sift-down contracts to the loop implementation.
+
+#### Sift-down and heap-tree lemmas
+
 - For any fuel, input array, and root position, fuel-bounded sift-down preserves array length and the element permutation. A general frame theorem proves that it leaves every index above the recursive target unchanged; the verification specification derives list-prefix preservation and permutation preservation of the suffix beginning at the root. The suffix length, sum, and count of elements satisfying any Boolean predicate are preserved; the predicate-count contract is also proved for recursive sift-down. With positive fuel, the resulting root equals the initial largest candidate and therefore dominates both initial children; recursive sift-down has the same domination property. The result equals the input exactly when fuel is zero or the root dominates its existing children. With positive fuel, the root value strictly increases exactly when an in-bounds child initially exceeds it; this also covers root indices outside the array. Any sufficient fuel can be reduced to `values.size - root`, and recursive sift-down is proved equal to this minimum-depth fuel execution.
 - Recursive `siftDownRecursive` preserves both array length and the element permutation for every array and root position, and leaves the array unchanged when the left child is out of bounds. The root descent results for five-, six-, seven-, and eight-element arrays, plus child-position descents for six-, seven-, and eight-element arrays, are characterized generally by value comparisons. For eight elements, post-descent subtree conditions are proved at indices 1, 2, and 3. For nine elements, descent results and subtree conditions are proved at indices 1, 2, and 3; processing indices 3, 2, and 1 in heap construction makes both root child subtrees heaps. A successful `popMaxRecursive` reduces the remainder length by exactly one and preserves, as a permutation, every input element except the root. The generic extraction element-preservation contract also yields count preservation for any Boolean predicate across the extracted value and remainder.
 - For an arbitrary root, if the input satisfies every parent-child edge whose parent index is greater than that root, the root after recursive sift-down dominates every value in the output subtree. Parent-child edges outside the selected child's subtree are also equivalent before and after descent. These general lemmas separate restoration of the root edge from preservation of edges untouched by the recursive call.
@@ -103,6 +124,9 @@ The loop implementation is checked on sorted, reverse, all-equal, and periodic i
 - Loop-based `heapSort` equals recursive `heapSortRecursive` for arbitrary inputs, using an invariant that relates the remaining iterations to recursive draining. Therefore the loop implementation itself satisfies `Correct` for every input length and value, and passes the independent Boolean checker.
 - For both recursive and loop-based implementations, a candidate output equals the implementation result exactly when it satisfies the shared `Correct` specification or passes the independent Boolean checker. Any accepted candidate can therefore be identified as the actual result.
 - Loop-based `heapSort` preserves array length, the sum of natural-number values, and the count of elements satisfying any Boolean predicate for arbitrary input lengths and values. The predicate-count theorem directly states element preservation with multiplicity.
+
+#### Properties derived from the shared specification
+
 - The shared sorting specification proves that mapping a list through any monotone function preserves `Correct`. As a corollary, both loop-based and recursive heap sort commute with mapping through every monotone `f` on arbitrary arrays.
 - A general theorem derives commutation between any correct sorter and a monotone map from the shared specification. It is applied to recursive and iterative heap sort, merge sort, and quick sort.
 - For any list sorter satisfying the shared specification, permutation-equivalent inputs produce the same output, ascending inputs are unchanged, and sorting twice is idempotent. These laws are applied to the recursive and iterative implementations of all three algorithms; heap sort is connected through a list adapter.
