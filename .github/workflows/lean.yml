@@ -21,17 +21,7 @@ jobs:
       - name: Run CLI smoke checks
         run: python3 scripts/test_cli.py
       - name: Reject proof holes and ad hoc axioms
-        run: |
-          if rg -n '\b(sorry|admit|sorryAx)\b|^[[:space:]]*(?:(private|protected|unsafe|noncomputable)[[:space:]]+)*(axiom|constant)\b' --glob '*.lean' .; then
-            echo 'Lean sources must not contain proof holes or ad hoc axiom declarations.'
-            exit 1
-          else
-            scan_status=$?
-            if [ "$scan_status" -ne 1 ]; then
-              echo "Lean source scan failed with rg exit status $scan_status."
-              exit "$scan_status"
-            fi
-          fi
+        run: python3 scripts/check_lean_sources.py
       - name: Audit kernel dependencies of public, private, and finite theorems
         run: |
           lake env lean scripts/verification_axiom_audit.lean > .lake/verification-axioms-module.txt 2>&1
@@ -41,16 +31,14 @@ jobs:
           lake env lean scripts/verification_axiom_audit_legacy_finite.lean > .lake/verification-axioms-legacy-finite.txt 2>&1
           lake env lean scripts/verification_axiom_audit_private_legacy.lean > .lake/verification-axioms-private-legacy.txt 2>&1
           python3 scripts/audit_private_module_axioms.py > .lake/verification-axioms-private-module.txt 2>&1
-          if rg -n 'sorryAx' .lake/verification-axioms-module.txt .lake/verification-axioms-module-native.txt .lake/verification-axioms-legacy.txt .lake/verification-axioms-module-finite.txt .lake/verification-axioms-legacy-finite.txt .lake/verification-axioms-private-module.txt .lake/verification-axioms-private-legacy.txt; then
-            echo 'An audited theorem depends on sorryAx.'
-            exit 1
-          else
-            audit_scan_status=$?
-            if [ "$audit_scan_status" -ne 1 ]; then
-              echo "Kernel dependency scan failed with rg exit status $audit_scan_status."
-              exit "$audit_scan_status"
-            fi
-          fi
+          python3 scripts/check_lean_sources.py --reject-sorry-ax \
+            .lake/verification-axioms-module.txt \
+            .lake/verification-axioms-module-native.txt \
+            .lake/verification-axioms-legacy.txt \
+            .lake/verification-axioms-module-finite.txt \
+            .lake/verification-axioms-legacy-finite.txt \
+            .lake/verification-axioms-private-module.txt \
+            .lake/verification-axioms-private-legacy.txt
           python3 scripts/check_verification_axioms.py \
             --manifest scripts/verification_axiom_manifest.json \
             --audit module .lake/verification-axioms-module.txt \
