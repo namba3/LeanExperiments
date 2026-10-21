@@ -121,6 +121,7 @@
     "LeanExperiments.Verification.PrimeFactors.primeFactors_prime_pow_dvd_iff_count_ge",
     "LeanExperiments.Verification.PrimeFactors.primeFactors_product_of_two_le",
     "LeanExperiments.Verification.PrimeFactors.primeFactors_squarefree_iff_nodup",
+    "LeanExperiments.Verification.PrimeFactors.primeFactors_toList_eq_primeFactorsList",
     "LeanExperiments.Verification.PrimeFactors.trialDivisionLoop_emitted_factors_prime",
     "LeanExperiments.Verification.PrimeFactors.trialDivisionLoop_no_smaller_divisor",
     "LeanExperiments.Verification.PrimeFactors.trialDivisionLoop_order_invariant",

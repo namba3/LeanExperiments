@@ -9,7 +9,11 @@ import re
 import sys
 from pathlib import Path
 
-from verification_source_declarations import declared_namespaces, theorem_declarations
+from verification_source_declarations import (
+    declared_namespaces,
+    strip_comments_and_strings,
+    theorem_declarations,
+)
 
 
 IMPORT = re.compile(r"^\s*(?:(?:public|meta)\s+)*import\s+(.+?)\s*(?:--.*)?$")
@@ -17,7 +21,8 @@ IMPORT = re.compile(r"^\s*(?:(?:public|meta)\s+)*import\s+(.+?)\s*(?:--.*)?$")
 
 def imports(path: Path) -> list[str]:
     found: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    source = strip_comments_and_strings(path.read_text(encoding="utf-8"))
+    for line in source.splitlines():
         match = IMPORT.match(line)
         if match:
             found.extend(match.group(1).split())

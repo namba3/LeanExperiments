@@ -120,6 +120,24 @@ class VerificationCoverageTests(unittest.TestCase):
         (self.root / "LeanExperiments/Verification.lean").write_text("", encoding="utf-8")
         self.assertTrue(any("not reachable" in error for error in self.check()))
 
+    def test_import_inside_multiline_comment_does_not_prove_reachability(self) -> None:
+        (self.root / "LeanExperiments/Verification.lean").write_text(
+            "/- Disabled while investigating the module graph:\n"
+            "/- Nested comment:\n"
+            "import LeanExperiments.Verification.Example\n"
+            "-/\n"
+            "-/\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("not reachable" in error for error in self.check()))
+
+    def test_import_inside_string_does_not_prove_reachability(self) -> None:
+        (self.root / "LeanExperiments/Verification.lean").write_text(
+            'def note := "import LeanExperiments.Verification.Example"\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("not reachable" in error for error in self.check()))
+
     def test_missing_olean_fails(self) -> None:
         (self.olean / "Example.olean").unlink()
         self.assertTrue(any("no built olean" in error for error in self.check()))

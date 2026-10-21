@@ -1493,6 +1493,14 @@ theorem primeFactors_correct (n : Nat) :
   · exact primeFactors_correct_of_le_one n hSmall
   · exact primeFactors_correct_of_two_le n (by omega)
 
+/-- 実装の因数列は、Mathlib の標準素因数列と任意の入力で一致する。
+
+独立仕様 `FactorsCorrect` の一意性と、Mathlib の `primeFactorsList` が同仕様を満たす
+ことを組み合わせる。0 と 1 も含め、空因数列の規約まで一致する。 -/
+theorem primeFactors_toList_eq_primeFactorsList (n : Nat) :
+    (LeanExperiments.primeFactors n).toList = n.primeFactorsList := by
+  exact FactorsCorrect.eq_primeFactorsList (primeFactors_correct n)
+
 /-- 非零二入力の積を分解すると、両入力の因数列を併合ソートした列になる。
 
 各実装出力が独立仕様を満たすことを、仕様の乗算閉包と一意性で合成する。0を除外するのは

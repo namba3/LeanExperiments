@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "review_reason": "Record defining module ownership for all public Verification declarations after confirming declaration names, kinds, printed types, and transitive axiom dependencies remain unchanged.",
+  "review_reason": "Add a general theorem equating the implementation output with Nat.primeFactorsList; the declaration and standard axiom dependencies were inspected.",
   "declarations": {
     "LeanExperiments.Verification.HeapSort.Spec.popMaxRestWideAdversarialCheck": {
       "axioms": [
@@ -10676,6 +10676,17 @@
       "module": "LeanExperiments.Verification.RunningMedian.HeapOperations",
       "name": "LeanExperiments.Verification.RunningMedian.insertHeap_minPrefer_sixElements_preserves",
       "type": "∀ {root left right leftLeaf rightLeaf middleLeaf value : ℕ},\n  LeanExperiments.Verification.RunningMedian.MinHeap #[root, left, right, leftLeaf, rightLeaf, middleLeaf] →\n    LeanExperiments.Verification.RunningMedian.MinHeap\n      (LeanExperiments.RunningMedian.insertHeap LeanExperiments.RunningMedian.minPrefer\n        #[root, left, right, leftLeaf, rightLeaf, middleLeaf] value)"
+    },
+    "LeanExperiments.Verification.PrimeFactors.primeFactors_toList_eq_primeFactorsList": {
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "kind": "theorem",
+      "module": "LeanExperiments.Verification.PrimeFactors.Spec",
+      "name": "LeanExperiments.Verification.PrimeFactors.primeFactors_toList_eq_primeFactorsList",
+      "type": "∀ (n : ℕ), (LeanExperiments.primeFactors n).toList = n.primeFactorsList"
     },
     "LeanExperiments.Verification.RunningMedian.StateInvariant.ofArray_size_eq_twelve": {
       "axioms": [

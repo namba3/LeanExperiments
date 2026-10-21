@@ -111,6 +111,7 @@ Verification配下の全公開一般定理を登録し、`propext`・`Classical.
 #print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_all_prime_of_remainder_prime
 #print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_ascending_of_two_le
 #print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_correct
+#print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_toList_eq_primeFactorsList
 #print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_correct_of_le_one
 #print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_correct_of_remainder_prime
 #print axioms LeanExperiments.Verification.PrimeFactors.primeFactors_correct_of_two_le
