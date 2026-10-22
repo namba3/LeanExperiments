@@ -21,6 +21,8 @@ def read_inventory(path: Path) -> dict[str, dict[str, object]]:
         raise ValueError(f"cannot read API inventory {path}: {error}") from error
     records: dict[str, dict[str, object]] = {}
     for number, line in enumerate(lines, start=1):
+        if "VERIFICATION_SPEC|" in line:
+            continue
         if "VERIFICATION_API|" not in line:
             if line.strip() and "info:" not in line:
                 raise ValueError(f"{path}:{number}: unexpected Lean output")

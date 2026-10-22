@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "declarations": [
+    {
+      "name": "LeanExperiments.Verification.Factorial.factorialSpec",
+      "source": "LeanExperiments/Verification/Factorial/Spec.lean",
+      "purpose": "Independent recursive factorial specification used to state implementation agreement."
+    },
+    {
+      "name": "LeanExperiments.Verification.Fibonacci.fibonacciSpecAux",
+      "source": "LeanExperiments/Verification/Fibonacci/Spec.lean",
+      "purpose": "Accumulator recurrence underlying the independent Fibonacci specification."
+    },
+    {
+      "name": "LeanExperiments.Verification.Fibonacci.fibonacciSpec",
+      "source": "LeanExperiments/Verification/Fibonacci/Spec.lean",
+      "purpose": "Independent recursive Fibonacci specification used to state implementation agreement."
+    },
+    {
+      "name": "LeanExperiments.Verification.HeapSort.Spec.MaxHeap",
+      "source": "LeanExperiments/Verification/HeapSort/HeapOperations.lean",
+      "purpose": "Logical parent-child order invariant for array-backed max-heaps."
+    },
+    {
+      "name": "LeanExperiments.Verification.HeapSort.Spec.siftDownLoopInvariant",
+      "source": "LeanExperiments/Verification/HeapSort/HeapOperations.lean",
+      "purpose": "State invariant connecting each iterative sift-down state to its initial heap contract."
+    },
+    {
+      "name": "LeanExperiments.Verification.HeapSort.Spec.HeapBuildCorrect",
+      "source": "LeanExperiments/Verification/HeapSort/Core.lean",
+      "purpose": "Heap-builder contract combining the max-heap invariant and input permutation."
+    },
+    {
+      "name": "LeanExperiments.Verification.HeapSort.Spec.PopMaxRestCorrectFor",
+      "source": "LeanExperiments/Verification/HeapSort/Core.lean",
+      "purpose": "Abstract maximum-pop contract composed by the general heapsort correctness proof."
+    },
+    {
+      "name": "LeanExperiments.Verification.HeapSort.Spec.PopMaxOrderCorrectFor",
+      "source": "LeanExperiments/Verification/HeapSort/Core.lean",
+      "purpose": "Maximum-pop contract for output bound, maximum selection, and permutation."
+    },
+    {
+      "name": "LeanExperiments.Verification.QuickSort.quickSortIterativeInvariant",
+      "source": "LeanExperiments/Verification/QuickSort/Spec.lean",
+      "purpose": "Semantic invariant relating emitted values and pending tasks to the recursive quick-sort result."
+    },
+    {
+      "name": "LeanExperiments.Verification.MergeSort.MergeLoopPrefixInvariant",
+      "source": "LeanExperiments/Verification/MergeSort/Spec.lean",
+      "purpose": "Prefix order and output-to-suffix boundary invariant for one merge-loop state."
+    },
+    {
+      "name": "LeanExperiments.Verification.MergeSort.MergeLoopInvariant",
+      "source": "LeanExperiments/Verification/MergeSort/Spec.lean",
+      "purpose": "State invariant connecting emitted values and the remaining merge during the loop."
+    },
+    {
+      "name": "LeanExperiments.Verification.PrimeFactors.isPrimeCheck",
+      "source": "LeanExperiments/Verification/PrimeFactors/Spec.lean",
+      "purpose": "Executable finite-divisor checker that defines the local primality predicate."
+    },
+    {
+      "name": "LeanExperiments.Verification.PrimeFactors.FactorsCorrect",
+      "source": "LeanExperiments/Verification/PrimeFactors/Spec.lean",
+      "purpose": "Independent factorization contract for product, ascending order, and primality."
+    },
+    {
+      "name": "LeanExperiments.Verification.RunningMedian.HeapOrdered",
+      "source": "LeanExperiments/Verification/RunningMedian/HeapInvariant.lean",
+      "purpose": "Logical heap-order predicate parameterized by the implementation preference relation."
+    },
+    {
+      "name": "LeanExperiments.Verification.RunningMedian.StateInvariant",
+      "source": "LeanExperiments/Verification/RunningMedian/StateInvariant.lean",
+      "purpose": "Partition, heap-order, cross-boundary, and balance invariant for median state."
+    },
+    {
+      "name": "LeanExperiments.Verification.RunningMedian.stateInvariantCheck",
+      "source": "LeanExperiments/Verification/RunningMedian/StateInvariant.lean",
+      "purpose": "Executable checker whose soundness and completeness are proved against StateInvariant."
+    },
+    {
+      "name": "LeanExperiments.Verification.RunningMedian.medianSpec",
+      "source": "LeanExperiments/Verification/RunningMedian/MedianSpec.lean",
+      "purpose": "Independent sort-based median reference specification."
+    },
+    {
+      "name": "LeanExperiments.Verification.Sorting.Spec.Ascending",
+      "source": "LeanExperiments/Verification/Sorting/Spec.lean",
+      "purpose": "Shared logical nondecreasing-order predicate for sorting results."
+    },
+    {
+      "name": "LeanExperiments.Verification.Sorting.Spec.Correct",
+      "source": "LeanExperiments/Verification/Sorting/Spec.lean",
+      "purpose": "Shared sorting contract combining output order and permutation preservation."
+    },
+    {
+      "name": "LeanExperiments.Verification.Sorting.Spec.ascendingCheck",
+      "source": "LeanExperiments/Verification/Sorting/Spec.lean",
+      "purpose": "Executable ascending-order checker linked by a general iff theorem to Ascending."
+    },
+    {
+      "name": "LeanExperiments.Verification.Sorting.Spec.correctCheck",
+      "source": "LeanExperiments/Verification/Sorting/Spec.lean",
+      "purpose": "Executable sorting-contract checker linked to the shared logical specification."
+    }
+  ]
+}

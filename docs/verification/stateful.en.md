@@ -24,7 +24,7 @@ Lean computation checks empty and whitespace-only input, space-separated values,
 
 ### Runtime resource boundary
 
-The general parser theorems establish value and error semantics for every finite input string; they do not bound memory or running time. `readNatList` and `readNat` currently read standard input through EOF into one string, then create split tokens and a result array. The original input, tokens, and array can therefore occupy memory at the same time. Memory limits, large-input performance, and recursion depth have not been measured or bounded. Alongside QuickSort's pivot-degeneration cases, whole-input buffering is an operational limitation.
+The general parser theorems establish value and error semantics for every finite input string; they do not bound memory or running time. Token conversion now uses a tail-recursive reverse accumulator, with a general theorem connecting it to the independent `List.mapM` specification for every token list. The long-input CLI regression check covers 32,768 values. `readNatList` and `readNat` still read standard input through EOF into one string, then create split tokens and a result array. The original input, tokens, and array can therefore occupy memory at the same time; input and memory limits are not imposed. Alongside QuickSort's pivot-degeneration cases, whole-input buffering is an operational limitation.
 
 ## Running median
 

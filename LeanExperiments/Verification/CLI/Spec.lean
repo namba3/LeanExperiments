@@ -128,17 +128,7 @@ theorem parseNatTokens_spec (tokens : List String) :
       match parseNatTokensSpec tokens with
       | some numbers => .ok numbers
       | none => .error "expected non-negative integers" := by
-  induction tokens with
-  | nil => rfl
-  | cons token tokens ih =>
-      cases hToken : token.toNat? with
-      | none => simp [parseNatTokensSpec, LeanExperiments.CLI.parseNatTokens, hToken]
-      | some number =>
-          simp only [LeanExperiments.CLI.parseNatTokens, hToken,
-            parseNatTokensSpec, List.mapM_cons]
-          cases hTail : tokens.mapM String.toNat? with
-          | none => simp [ih, parseNatTokensSpec, hTail]
-          | some numbers => simp [ih, parseNatTokensSpec, hTail]
+  exact LeanExperiments.CLI.parseNatTokens_spec tokens
 
 /-- 文字列パーサーは、空白分割後のトークン列を独立仕様どおりに変換する。 -/
 theorem parseNatList_spec (input : String) :

@@ -56,7 +56,7 @@ def main() -> int:
     # Exercise large decimal tokens and a long list through the real parser and CLI.
     large_natural = "9" * 256
     expect_output("median", f"{large_natural} {large_natural}\n", f"{large_natural}\n")
-    long_values = list(range(4095, -1, -1))
+    long_values = list(range(32767, -1, -1))
     expect_output(
         "heapsort",
         " ".join(map(str, long_values)),

@@ -12,16 +12,43 @@ private def inputError {α : Type} (application message : String) : IO α := do
   IO.eprintln s!"{application}: {message}"
   IO.Process.exit 1
 
-/-- 空白分割後のトークン列を左から自然数列へ変換する。 -/
-def parseNatTokens : List String → Except String (List Nat)
-  | [] => .ok []
-  | token :: tokens =>
+/-- トークンを末尾再帰で解析し、順序を保った自然数列を返す。 -/
+private def parseNatTokensAux : List String → List Nat → Except String (List Nat)
+  | [], reversed => .ok reversed.reverse
+  | token :: tokens, reversed =>
       match token.toNat? with
       | none => .error "expected non-negative integers"
+      | some number => parseNatTokensAux tokens (number :: reversed)
+
+/-- 空白分割後のトークン列を左から自然数列へ変換する。 -/
+def parseNatTokens (tokens : List String) : Except String (List Nat) :=
+  parseNatTokensAux tokens []
+
+/-- 末尾再帰パーサーは、任意トークン列の `mapM` 仕様と一致する。 -/
+private theorem parseNatTokensAux_spec (tokens : List String) (reversed : List Nat) :
+    parseNatTokensAux tokens reversed =
+      match tokens.mapM String.toNat? with
+      | some numbers => .ok (reversed.reverse ++ numbers)
+      | none => .error "expected non-negative integers" := by
+  induction tokens generalizing reversed with
+  | nil => simp [parseNatTokensAux]
+  | cons token tokens ih =>
+      cases hToken : token.toNat? with
+      | none => simp [parseNatTokensAux, hToken]
       | some number =>
-          match parseNatTokens tokens with
-          | .error message => .error message
-          | .ok numbers => .ok (number :: numbers)
+          simp only [parseNatTokensAux, hToken, List.mapM_cons]
+          cases hTail : tokens.mapM String.toNat? with
+          | none => simp [ih, hTail]
+          | some numbers => simp [ih, hTail, List.reverse_cons, List.append_assoc]
+
+/-- 成功・失敗と成功時の順序を、任意トークン列の独立 `mapM` 仕様と照合する。 -/
+theorem parseNatTokens_spec (tokens : List String) :
+    parseNatTokens tokens =
+      match tokens.mapM String.toNat? with
+      | some numbers => .ok numbers
+      | none => .error "expected non-negative integers" := by
+  rw [parseNatTokens]
+  simpa using parseNatTokensAux_spec tokens []
 
 /-- 空白入力から、空トークンを除いたトークン列を得る。 -/
 def splitNatTokens (input : String) : List String :=

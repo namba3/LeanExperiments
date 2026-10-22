@@ -56,8 +56,12 @@ GitHub Actions の実行サマリーには、一般証明・有限確認ごと�
 
 GitHub Actions は `lake build` と CLI の入出力確認に加え、監査ツールのネガティブテストを実行します。`verification_sources.json` は Verification 配下の全ファイルと名前空間を登録し、CI はファイル一覧、`LeanExperiments.Verification` からの import 到達性、ビルド済み `.olean` を照合します。ソース上の theorem / lemma は axiom manifest の明示的な一般・有限グループと照合し、定理名の規則から範囲を推測しません。Lean ソース全体から `sorry`・`admit`・独自 `axiom`／`constant` 宣言を検出し、公開命題、private 補助定理、有限回帰検査・具体例のカーネル依存を個別に監査します。private 名が import 後に隠れる module-system 形式では、元ソースを監査時に再コンパイルして依存を取得します。通常の一般定理と private 定理の依存は `propext`・`Classical.choice`・`Quot.sound` に限定します。一般的な帰納証明の基底値や有限剰余表の証明に `native_decide` を使う定理は別グループに登録し、生成補助公理を登録済み対象に制限します。Lean Environment から検証名前空間の公開 proposition 宣言を列挙し、public manifest と比較します。private proposition-valued `def` / `opaque` は生成補助宣言も含めて reviewed baseline と照合します。
 
-Lean Environment から公開宣言1,740件（うち proposition 宣言1,497件）の名前、種類、所属モジュール、表示された型、公理依存を `verification_api_baseline.json` と照合します。削除、新規追加、型・種類・依存の差分は CI で要レビューとして検出します。型は Lean pretty printer の文字列表現で比較するため、差分は意味的非同値性を証明するものではなく、意味的同値性も自動証明しません。baseline 更新はレビュー後に明示して行います。API snapshot と公理監査は異なる観点を記録し、いずれも単独で証明の適切さを保証するものではありません。ビルド成功は Lean が受理した定義・証明の確認です。有限計算確認と、形式検証の対象外である CLI の標準入出力実行は別の証拠です。
+Lean Environment から公開宣言1,741件（うち proposition 宣言1,498件）の名前、種類、所属モジュール、表示された型、公理依存を `verification_api_baseline.json` と照合します。削除、新規追加、型・種類・依存の差分は CI で要レビューとして検出します。型は Lean pretty printer の文字列表現で比較するため、差分は意味的非同値性を証明するものではなく、意味的同値性も自動証明しません。
+
+さらに、`verification_spec_manifest.json` が指定する21件の中心仕様・不変条件・契約について、Lean Environment の elaboration 済み `Expr` の構造 fingerprint を `verification_spec_baseline.json` と照合します。binder 名と elaboration metadata を除去して構造を表し、SHA-256、型、module、reducibility、safety、公理依存、Lean version を記録します。fingerprint の一致はこの正規化方式でExpr構造が一致したことを示すだけで、数学的妥当性や実装との対応を証明しません。不一致は意味変更と表現変更を区別せず review を要求します。baseline 更新には理由を記録し、意味変更では旧・新仕様の関係を別途確認してください。Lean toolchain の更新も構造表現の再確認が必要です。
+
+baseline 更新はレビュー後に明示して行います。API snapshot、仕様本体 fingerprint、公理監査は別の観点を記録し、いずれも単独で証明の適切さを保証するものではありません。ビルド成功は Lean が受理した定義・証明の確認です。有限計算確認と、形式検証の対象外である CLI の標準入出力実行は別の証拠です。
 
 ## 性能測定
 
-`python3 scripts/benchmark_algorithms.py --sizes 100 1000 5000 --repeats 3 --output benchmark.json` は、heap / merge / quick sort の再帰版・ループ版と RunningMedian のCLIを、乱数・昇順・降順・重複値の多い入力で測定します。Lean CLI の入出力時間と、GNU `time` が報告する子プロセスの最大RSSをJSONに記録し、出力が参照結果と一致することも確認します。測定値にはCLIの解析・表示コストを含み、計算量の証明ではありません。サイズや実行環境を変えた結果を比較するときは、Lean toolchain、OS、seed、反復回数を合わせてください。
+`python3 scripts/benchmark_algorithms.py --sizes 100 1000 5000 --repeats 3 --output benchmark.json` は、heap / merge / quick sort の再帰版・ループ版と RunningMedian のCLIを、乱数・昇順・降順・重複値の多い入力で測定します。Lean CLI の入出力時間と、GNU `time` が報告する子プロセスの最大RSSをJSONに記録し、出力が参照結果と一致することも確認します。各反復と測定行に成功・出力不一致・実行エラー・タイムアウトを記録し、失敗した測定を含む場合は他のケースを続けてから非ゼロ終了します。出力不一致は `correctness_failure` として重大度を明示します。測定値にはCLIの解析・表示コストを含み、計算量の証明ではありません。サイズや実行環境を変えた結果を比較するときは、Lean toolchain、OS、seed、反復回数を合わせてください。

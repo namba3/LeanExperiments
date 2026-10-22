@@ -37,6 +37,10 @@ jobs:
           python3 scripts/check_verification_api.py \
             --baseline scripts/verification_api_baseline.json \
             .lake/verification-api.txt
+          python3 scripts/check_verification_specs.py \
+            --manifest scripts/verification_spec_manifest.json \
+            --baseline scripts/verification_spec_baseline.json \
+            .lake/verification-api.txt
       - name: Check private proposition-definition inventory
         run: |
           lake env lean scripts/verification_private_prop_def_inventory.lean > .lake/verification-private-prop-defs.txt 2>&1

@@ -8,6 +8,7 @@ formatting; they are measurements, not asymptotic complexity proofs.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import platform
 import random
@@ -23,6 +24,127 @@ ALGORITHMS = (
     "heapsort", "heapsort-rec", "mergesort", "mergesort-loop",
     "quicksort", "quicksort-loop", "median",
 )
+TIMEOUT_SECONDS = 120
+OUTPUT_REPORT_LIMIT = 4096
+
+
+def summarize_output(value: str) -> dict[str, object]:
+    """Keep failure reports bounded while retaining an exact content digest."""
+    encoded = value.encode("utf-8")
+    summary: dict[str, object] = {
+        "length_bytes": len(encoded),
+        "sha256": hashlib.sha256(encoded).hexdigest(),
+    }
+    if len(encoded) <= OUTPUT_REPORT_LIMIT:
+        summary["text"] = value
+    else:
+        half = OUTPUT_REPORT_LIMIT // 2
+        summary["prefix"] = encoded[:half].decode("utf-8", errors="replace")
+        summary["suffix"] = encoded[-half:].decode("utf-8", errors="replace")
+        summary["truncated"] = True
+    return summary
+
+
+def run_repetition(
+    command: list[str], input_text: str, expected: str, time_report: Path,
+    timeout: int = TIMEOUT_SECONDS,
+) -> dict[str, object]:
+    """Run and classify one sample; never let a failed sample abort the suite."""
+    time_report.unlink(missing_ok=True)
+    started = time.perf_counter()
+    try:
+        result = subprocess.run(
+            command, input=input_text, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            check=False, timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        return {
+            "status": "timeout",
+            "wall_seconds": round(time.perf_counter() - started, 6),
+            "timeout_seconds": timeout,
+            "stdout": summarize_output(_as_text(error.stdout)),
+            "stderr": summarize_output(_as_text(error.stderr)),
+        }
+    except OSError as error:
+        return {
+            "status": "execution_error",
+            "wall_seconds": round(time.perf_counter() - started, 6),
+            "error": str(error),
+        }
+
+    sample: dict[str, object] = {
+        "wall_seconds": round(time.perf_counter() - started, 6),
+        "exit_code": result.returncode,
+    }
+    try:
+        if time_report.is_file():
+            seconds, rss = time_report.read_text(encoding="utf-8").strip().split(",")
+            sample["gnu_time_seconds"] = float(seconds)
+            sample["peak_rss_kib"] = int(rss)
+    except (OSError, ValueError) as error:
+        sample["measurement_error"] = f"could not parse GNU time output: {error}"
+
+    if result.returncode != 0:
+        sample.update({"status": "execution_error", "stderr": summarize_output(result.stderr)})
+    elif result.stdout != expected or result.stderr:
+        sample.update({
+            "status": "output_mismatch",
+            "expected_stdout": summarize_output(expected),
+            "actual_stdout": summarize_output(result.stdout),
+            "stderr": summarize_output(result.stderr),
+        })
+    elif "gnu_time_seconds" not in sample or "peak_rss_kib" not in sample:
+        sample["status"] = "execution_error"
+    else:
+        sample["status"] = "success"
+    return sample
+
+
+def _as_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    return value.decode(errors="replace") if isinstance(value, bytes) else value
+
+
+def make_result_row(
+    algorithm: str, shape: str, size: int, repeats: int, samples: list[dict[str, object]],
+) -> dict[str, object]:
+    successful = [sample for sample in samples if sample["status"] == "success"]
+    statuses = {sample["status"] for sample in samples}
+    status = "success" if len(successful) == repeats else (
+        "output_mismatch" if "output_mismatch" in statuses else
+        "execution_error" if "execution_error" in statuses else "timeout"
+    )
+    row: dict[str, object] = {
+        "algorithm": algorithm,
+        "input_shape": shape,
+        "size": size,
+        "repeats": repeats,
+        "status": status,
+        "successful_repeats": len(successful),
+        "samples": samples,
+    }
+    if successful:
+        row.update({
+            "wall_seconds_median": statistics.median(sample["wall_seconds"] for sample in successful),
+            "wall_seconds_gnu_time_median": statistics.median(sample["gnu_time_seconds"] for sample in successful),
+            "peak_rss_kib_max": max(sample["peak_rss_kib"] for sample in successful),
+        })
+    if status == "output_mismatch":
+        row["severity"] = "correctness_failure"
+    return row
+
+
+def measure_case(
+    algorithm: str, binary: Path, timer: Path, input_text: str, expected: str,
+    shape: str, size: int, repeats: int, time_report: Path,
+) -> dict[str, object]:
+    samples = []
+    for _ in range(repeats):
+        command = [str(timer), "-f", "%e,%M", "-o", str(time_report), str(binary)]
+        samples.append(run_repetition(command, input_text, expected, time_report))
+    return make_result_row(algorithm, shape, size, repeats, samples)
 
 
 def make_values(size: int, shape: str, seed: int) -> list[int]:
@@ -75,39 +197,25 @@ def main() -> int:
                         + (".5\n" if (ordered[middle - 1] + ordered[middle]) % 2 else "\n")
                     )
                 for algorithm, binary in binaries.items():
-                    elapsed: list[float] = []
-                    gnu_elapsed: list[float] = []
-                    peak_rss_kib: list[int] = []
                     expected = expected_median if algorithm == "median" else sorted_output
-                    for _ in range(args.repeats):
-                        command = [str(timer), "-f", "%e,%M", "-o", str(time_report), str(binary)]
-                        started = time.perf_counter()
-                        result = subprocess.run(command, input=input_text, text=True,
-                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                                check=False, timeout=120)
-                        elapsed.append(time.perf_counter() - started)
-                        if result.returncode != 0 or result.stdout != expected or result.stderr:
-                            raise RuntimeError(
-                                f"{algorithm} failed {shape} input of size {size}: "
-                                f"exit={result.returncode}, stderr={result.stderr!r}"
-                            )
-                        seconds, rss = time_report.read_text(encoding="utf-8").strip().split(",")
-                        gnu_elapsed.append(float(seconds))
-                        peak_rss_kib.append(int(rss))
-                    rows.append({
-                        "algorithm": algorithm,
-                        "input_shape": shape,
-                        "size": size,
-                        "repeats": args.repeats,
-                        "wall_seconds_median": round(statistics.median(elapsed), 6),
-                        "wall_seconds_gnu_time_median": statistics.median(gnu_elapsed),
-                        "peak_rss_kib_max": max(peak_rss_kib),
-                    })
+                    row = measure_case(
+                        algorithm, binary, timer, input_text, expected,
+                        shape, size, args.repeats, time_report,
+                    )
+                    rows.append(row)
+                    if row["status"] != "success":
+                        print(
+                            f"{algorithm} {shape} size={size}: {row['status']} "
+                            f"({row['successful_repeats']}/{args.repeats} successful samples)",
+                            file=sys.stderr,
+                        )
 
     report = {
         "toolchain": Path("lean-toolchain").read_text(encoding="utf-8").strip(),
         "platform": platform.platform(),
+        "python": sys.version.split()[0],
         "seed": args.seed,
+        "timeout_seconds": TIMEOUT_SECONDS,
         "measurement": "CLI end-to-end wall time and GNU time child peak RSS; includes parsing and output formatting",
         "complexity_claim": "none; these are empirical measurements",
         "results": rows,
@@ -117,12 +225,12 @@ def main() -> int:
         args.output.write_text(rendered, encoding="utf-8")
     else:
         sys.stdout.write(rendered)
-    return 0
+    return 1 if any(row["status"] != "success" for row in rows) else 0
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (OSError, RuntimeError, subprocess.TimeoutExpired, ValueError) as error:
+    except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         raise SystemExit(1) from error
